@@ -2,7 +2,7 @@
 require 'connection.php';
 
 // Function to add a patient
-function addPatient($name,$email, $dob, $gender, $contact, $address)
+function addPatient($name, $email, $dob, $gender, $contact, $address)
 {
     global $mysqli;
 
@@ -12,7 +12,7 @@ function addPatient($name,$email, $dob, $gender, $contact, $address)
     }
 
     $stmt = $mysqli->prepare("INSERT INTO patient (Name,Email, DOB, Gender, Contact, Address) VALUES (?,?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $name,$email ,$dob, $gender, $contact, $address);
+    $stmt->bind_param("ssssss", $name, $email, $dob, $gender, $contact, $address);
 
     if ($stmt->execute()) {
         return "Patient added successfully!";
@@ -70,6 +70,8 @@ $fixedAppointmentTimes = [
 $error_message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    
     if (isset($_POST["add_patient"])) {
         $name = $_POST["name"];
         $email = $_POST["email"];
@@ -78,7 +80,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $contact = $_POST["contact"];
         $address = $_POST["address"];
 
-        $result = addPatient($name,$email, $dob, $gender, $contact, $address);
+        $result = addPatient($name, $email, $dob, $gender, $contact, $address);
 
         // Check for errors and display error message
         if (strpos($result, "Error:") === 0) {
@@ -104,7 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // Function to update patient details
-function updatePatient($patientID, $name,$email, $dob, $gender, $contact, $address)
+function updatePatient($patientID, $name, $email, $dob, $gender, $contact, $address)
 {
     global $mysqli;
 
@@ -113,7 +115,7 @@ function updatePatient($patientID, $name,$email, $dob, $gender, $contact, $addre
     $stmt->bind_param("i", $patientID);
     $stmt->execute();
     $stmt->store_result();
-    $stmt->bind_result($currentName,$currentEmail,$currentDOB, $currentGender, $currentContact, $currentAddress);
+    $stmt->bind_result($currentName, $currentEmail, $currentDOB, $currentGender, $currentContact, $currentAddress);
     $stmt->fetch();
     $stmt->close();
 
@@ -177,13 +179,13 @@ function updatePatient($patientID, $name,$email, $dob, $gender, $contact, $addre
 if (isset($_POST["update_patient"])) {
     $editPatientID = $_POST["edit_patient_id"];
     $editName = $_POST["edit_name"];
-    $editEmail= $_POST["edit_email"];
+    $editEmail = $_POST["edit_email"];
     $editDOB = $_POST["edit_dob"];
     $editGender = $_POST["edit_gender"];
     $editContact = $_POST["edit_contact"];
     $editAddress = $_POST["edit_address"];
 
-    $result = updatePatient($editPatientID, $editName,$editEmail, $editDOB, $editGender, $editContact, $editAddress);
+    $result = updatePatient($editPatientID, $editName, $editEmail, $editDOB, $editGender, $editContact, $editAddress);
 
     if (strpos($result, "Error:") === 0) {
         echo '<script>alert("' . $result . '");</script>';
@@ -227,6 +229,52 @@ if (isset($_POST["edit_appointment"])) {
     }
 }
 
+// Function to delete a patient by ID, along with their appointments
+function deletePatient($patientID)
+{
+    global $mysqli;
+
+    // Check if the patient exists
+    $stmt = $mysqli->prepare("SELECT PatientID FROM patient WHERE PatientID = ?");
+    $stmt->bind_param("i", $patientID);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows === 0) {
+        return "Error: Patient with ID $patientID does not exist.";
+    }
+
+    // Delete the patient's appointments first
+    $deleteAppointments = $mysqli->prepare("DELETE FROM appointment WHERE PatientID = ?");
+    $deleteAppointments->bind_param("i", $patientID);
+    if (!$deleteAppointments->execute()) {
+        return "Error: " . $deleteAppointments->error;
+    }
+
+    // Now delete the patient
+    $stmt = $mysqli->prepare("DELETE FROM patient WHERE PatientID = ?");
+    $stmt->bind_param("i", $patientID);
+
+    if ($stmt->execute()) {
+        return "Patient with ID $patientID and associated appointments deleted successfully!";
+    } else {
+        return "Error: " . $stmt->error;
+    }
+    $stmt->close();
+}
+
+
+if (isset($_POST["delete_patient"])) {
+    $deletePatientID = $_POST["delete_patient_id"];
+    $result = deletePatient($deletePatientID);
+
+    if (strpos($result, "Error:") === 0) {
+        echo '<script>alert("' . $result . '");</script>';
+    } else {
+        echo '<script>alert("Success");</script>';
+    }
+}
+
 
 
 ?>
@@ -236,127 +284,222 @@ if (isset($_POST["edit_appointment"])) {
 
 <head>
     <title>Admin Panel</title>
-    <style>
-        select[name="edit_appointment_id"] {
-            width: 300px;
-            /* Adjust the width as needed */
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
+    <!-- Add Bootstrap CSS Link -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
-        /* Style the dropdown options */
-        select[name="edit_appointment_id"] option {
-            padding: 5px;
-            font-size: 16px;
-            background-color: #fff;
-            color: #333;
-        }
-    </style>
 </head>
 
 <body>
-    <h1>Add Patient</h1>
-    <form method="post">
-        <input type="text" name="name" placeholder="Name" required><br>
-        <input type="email" name="email" placeholder="Email" required><br>
-        <input type="date" name="dob" required><br>
-        <label for="gender">Gender:</label>
-        <select name="gender" id="gender" required>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select><br>
-        <input type="text" name="contact" placeholder="Contact" required pattern="[0-9]{10}" title="Contact number must be exactly 10 digits."><br>
-        <textarea name="address" placeholder="Address" required></textarea><br>
-        <input type="submit" name="add_patient" value="Add Patient">
-        <?php
-        if ($error_message) {
-            echo '<div style="color: red;">' . $error_message . '</div>';
+    <div class="container mt-5">
+        <h1>Appointments for a Date</h1>
+        <form method="post">
+            <input type="date" name="selected_date" required>
+            <input type="submit" name="display_appointments" value="Display Appointments">
+        </form>
+        <?php 
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+            if (isset($_POST["display_appointments"])) {
+                $selectedDate = $_POST["selected_date"];
+        
+                // Query to fetch appointments for the selected date from the SQL view
+                $query = "SELECT * FROM appointments_for_date WHERE AppointmentDate = ?";
+                $stmt = $mysqli->prepare($query);
+                $stmt->bind_param("s", $selectedDate);
+                $stmt->execute();
+                $result = $stmt->get_result();
+        
+                if ($result->num_rows > 0) {
+                    
+                    echo '<h5 class="mt-3">Appointments for ' . $selectedDate . '</h5>';
+                    echo '</div>'; // Close the previous container
+        
+                    echo '<div class="container mt-3">';
+                    echo '<div class="table-responsive">';
+                    echo '<table class="table table-striped">';
+                    echo '<thead class="thead-dark">';
+                    echo '<tr><th>Appointment ID</th><th>Patient Name</th><th>Appointment Date</th><th>Appointment Time</th></tr>';
+                    echo '</thead><tbody>';
+        
+                    while ($row = $result->fetch_assoc()) {
+                        echo '<tr>';
+                        echo '<td>' . $row['AppointmentID'] . '</td>';
+                        echo '<td>' . $row['Name'] . '</td>';
+                        echo '<td>' . $row['AppointmentDate'] . '</td>';
+                        echo '<td>' . $row['AppointmentTime'] . '</td>';
+                        echo '</tr>';
+                    }
+        
+                    echo '</tbody></table>';
+                    echo '</div>'; // .table-responsive
+                    
+                } else {
+                    
+                    echo 'No appointments found for ' . $selectedDate;
+                   
+                }
+        
+                $stmt->close();
+            }
         }
         ?>
-    </form>
 
-    <h1>Make Appointment</h1>
-    <form method="post">
-        <select name="patient_id" required>
-            <!-- Display a list of patients for selection -->
+        <h1>Add Patient</h1>
+        <form method="post">
+            <div class="form-group">
+                <input type="text" name="name" placeholder="Name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <input type="date" name="dob" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="gender">Gender:</label>
+                <select name="gender" id="gender" class="form-control" required>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="text" name="contact" placeholder="Contact" class="form-control" required pattern="[0-9]{10}" title="Contact number must be exactly 10 digits.">
+            </div>
+            <div class="form-group">
+                <textarea name="address" placeholder="Address" class="form-control" required></textarea>
+            </div>
+            <button type="submit" name="add_patient" class="btn btn-primary">Add Patient</button>
             <?php
-            $result = $mysqli->query("SELECT PatientID, Name FROM patient");
-            while ($row = $result->fetch_assoc()) {
-                echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " " . $row['Name'] . "</option>";
+            if ($error_message) {
+                echo '<div style="color: red;">' . $error_message . '</div>';
             }
             ?>
-        </select><br>
-        <input type="date" name="appointment_date" required min="<?php echo date('Y-m-d'); ?>"><br>
-        <select name="appointment_time" required>
-            <?php
-            foreach ($fixedAppointmentTimes as $time) {
-                echo "<option value='$time'>$time</option>";
-            }
-            ?>
-        </select><br>
-        <input type="submit" name="make_appointment" value="Make Appointment">
+        </form>
 
-    </form>
+        <h1>Make Appointment</h1>
+        <form method="post">
+            <div class="form-group">
+                <select name="patient_id" class="form-control" required>
+                    <!-- Display a list of patients for selection -->
+                    <?php
+                    $result = $mysqli->query("SELECT PatientID, Name FROM patient");
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " " . $row['Name'] . "</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="date" name="appointment_date" class="form-control" required min="<?php echo date('Y-m-d'); ?>">
+            </div>
+            <div class="form-group">
+                <select name="appointment_time" class="form-control" required>
+                    <?php
+                    foreach ($fixedAppointmentTimes as $time) {
+                        echo "<option value='$time'>$time</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <button type="submit" name="make_appointment" class="btn btn-primary">Make Appointment</button>
+        </form>
 
-    <h1>Edit Patient Details</h1>
-    <form method="post">
-        <select name="edit_patient_id" required>
-            <!-- Display a list of patients for selection -->
-            <?php
-            $result = $mysqli->query("SELECT PatientID, Name FROM patient");
-            while ($row = $result->fetch_assoc()) {
-                echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " " . $row['Name'] . "</option>";
-            }
-            ?>
-        </select><br>
-        <input type="text" name="edit_name" placeholder="Name">
-        <input type="email" name="edit_email" placeholder="Email">
-        <input type="date" name="edit_dob" placeholder="Date of Birth">
-        <select name="edit_gender">
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
-        <input type="text" name="edit_contact" placeholder="Contact">
-        <textarea name="edit_address" placeholder="Address"></textarea>
-        <input type="submit" name="update_patient" value="Update Patient Details">
-    </form>
+        <h1>Edit Patient Details</h1>
+        <form method="post">
+            <div class="form-group">
+                <select name="edit_patient_id" class="form-control" required>
+                    <!-- Display a list of patients for selection -->
+                    <?php
+                    $result = $mysqli->query("SELECT PatientID, Name FROM patient");
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " " . $row['Name'] . "</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="text" name="edit_name" placeholder="Name" class="form-control">
+            </div>
+            <div class="form-group">
+                <input type="email" name="edit_email" placeholder="Email" class="form-control">
+            </div>
+            <div class="form-group">
+                <input type="date" name="edit_dob" class="form-control">
+            </div>
+            <div class="form-group">
+                <select name="edit_gender" class="form-control">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="text" name="edit_contact" placeholder="Contact" class="form-control">
+            </div>
+            <div class="form-group">
+                <textarea name="edit_address" placeholder="Address" class="form-control"></textarea>
+            </div>
+            <button type="submit" name="update_patient" class="btn btn-primary">Update Patient Details</button>
+        </form>
 
-    <!-- HTML Form for Editing Appointment -->
-    <h1>Edit Appointment</h1>
-    <form method="post">
-        <select name="edit_appointment_id" required>
-            <!-- Display a list of appointments for selection -->
-            <?php
-            $sql = "SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name FROM appointment INNER JOIN patient ON appointment.PatientID = patient.PatientID";
-            $result = $mysqli->query($sql);
+        <!-- HTML Form for Editing Appointment -->
+        <h1>Edit Appointment</h1>
+        <form method="post">
+            <div class="form-group">
+                <select name="edit_appointment_id" class="form-control" required>
+                    <!-- Display a list of appointments for selection -->
+                    <?php
+                    $sql = "SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name FROM appointment INNER JOIN patient ON appointment.PatientID = patient.PatientID";
+                    $result = $mysqli->query($sql);
 
-            while ($row = $result->fetch_assoc()) {
-                $appointmentID = $row['AppointmentID'];
-                $patientID = $row['PatientID'];
-                $name = $row['Name'];
-                $date = $row['AppointmentDate'];
-                $time = $row['AppointmentTime'];
+                    while ($row = $result->fetch_assoc()) {
+                        $appointmentID = $row['AppointmentID'];
+                        $patientID = $row['PatientID'];
+                        $name = $row['Name'];
+                        $date = $row['AppointmentDate'];
+                        $time = $row['AppointmentTime'];
 
-                $displayText = "Appointment ID: $appointmentID - Patient ID: $patientID - Patient Name: $name - Date: $date - Time: $time";
+                        $displayText = "Appointment ID: $appointmentID - Patient ID: $patientID - Patient Name: $name - Date: $date - Time: $time";
 
-                echo "<option value='$appointmentID'>$displayText</option>";
-            }
-            ?>
-        </select><br>
+                        echo "<option value='$appointmentID'>$displayText</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="date" name="new_appointment_date" class="form-control" required min="<?php echo date('Y-m-d'); ?>">
+            </div>
+            <div class="form-group">
+                <select name="new_appointment_time" class="form-control" required>
+                    <?php
+                    foreach ($fixedAppointmentTimes as $time) {
+                        echo "<option value='$time'>$time</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <button type="submit" name="edit_appointment" class="btn btn-primary">Edit Appointment</button>
+        </form>
 
-        <input type="date" name="new_appointment_date" required min="<?php echo date('Y-m-d'); ?>"><br>
-        <select name="new_appointment_time" required>
-            <?php
-            foreach ($fixedAppointmentTimes as $time) {
-                echo "<option value='$time'>$time</option>";
-            }
-            ?>
-        </select><br>
-        <input type="submit" name="edit_appointment" value="Edit Appointment">
-    </form>
+        <h1>Delete Patient</h1>
+        <form method="post">
+            <div class="form-group">
+                <select name="delete_patient_id" class="form-control" required>
+                    <?php
+                    $result = $mysqli->query("SELECT PatientID, Name FROM patient");
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " - " . $row['Name'] . "</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <button type="submit" name="delete_patient" class="btn btn-danger">Delete Patient</button>
+        </form>
+    </div>
 
-
+    <!-- Add Bootstrap JavaScript and jQuery If Needed -->
+    <!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
 </body>
 
 </html>
