@@ -186,6 +186,42 @@ if (isset($_POST["update_patient"])) {
     }
 }
 
+// Function to edit an appointment
+function editAppointment($appointmentID, $newAppointmentDate, $newAppointmentTime)
+{
+    global $mysqli;
+
+    // Check if the new slot is available before making the edit
+    if (!isSlotAvailable($newAppointmentDate, $newAppointmentTime)) {
+        return "Error: The new appointment slot is already booked.";
+    }
+
+    $stmt = $mysqli->prepare("UPDATE appointment SET AppointmentDate = ?, AppointmentTime = ? WHERE AppointmentID = ?");
+    $stmt->bind_param("ssi", $newAppointmentDate, $newAppointmentTime, $appointmentID);
+
+    if ($stmt->execute()) {
+        return "Appointment edited successfully!";
+    } else {
+        return "Error: " . $stmt->error;
+    }
+    $stmt->close();
+}
+
+if (isset($_POST["edit_appointment"])) {
+    $appointmentID = $_POST["edit_appointment_id"];
+    $newAppointmentDate = $_POST["new_appointment_date"];
+    $newAppointmentTime = $_POST["new_appointment_time"];
+
+    $result = editAppointment($appointmentID, $newAppointmentDate, $newAppointmentTime);
+
+    if (strpos($result, "Error:") === 0) {
+        echo '<script>alert("' . $result . '");</script>';
+    } else {
+        echo '<script>alert("Success");</script>';
+    }
+}
+
+
 
 ?>
 
@@ -194,6 +230,23 @@ if (isset($_POST["update_patient"])) {
 
 <head>
     <title>Admin Panel</title>
+    <style>
+        select[name="edit_appointment_id"] {
+            width: 300px;
+            /* Adjust the width as needed */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* Style the dropdown options */
+        select[name="edit_appointment_id"] option {
+            padding: 5px;
+            font-size: 16px;
+            background-color: #fff;
+            color: #333;
+        }
+    </style>
 </head>
 
 <body>
@@ -260,6 +313,41 @@ if (isset($_POST["update_patient"])) {
         <textarea name="edit_address" placeholder="Address"></textarea>
         <input type="submit" name="update_patient" value="Update Patient Details">
     </form>
+
+    <!-- HTML Form for Editing Appointment -->
+    <h1>Edit Appointment</h1>
+    <form method="post">
+        <select name="edit_appointment_id" required>
+            <!-- Display a list of appointments for selection -->
+            <?php
+            $sql = "SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name FROM appointment INNER JOIN patient ON appointment.PatientID = patient.PatientID";
+            $result = $mysqli->query($sql);
+
+            while ($row = $result->fetch_assoc()) {
+                $appointmentID = $row['AppointmentID'];
+                $patientID = $row['PatientID'];
+                $name = $row['Name'];
+                $date = $row['AppointmentDate'];
+                $time = $row['AppointmentTime'];
+
+                $displayText = "Appointment ID: $appointmentID - Patient ID: $patientID - Patient Name: $name - Date: $date - Time: $time";
+
+                echo "<option value='$appointmentID'>$displayText</option>";
+            }
+            ?>
+        </select><br>
+
+        <input type="date" name="new_appointment_date" required min="<?php echo date('Y-m-d'); ?>"><br>
+        <select name="new_appointment_time" required>
+            <?php
+            foreach ($fixedAppointmentTimes as $time) {
+                echo "<option value='$time'>$time</option>";
+            }
+            ?>
+        </select><br>
+        <input type="submit" name="edit_appointment" value="Edit Appointment">
+    </form>
+
 
 </body>
 
