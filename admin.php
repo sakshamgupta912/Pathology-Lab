@@ -362,7 +362,7 @@ if (isset($_POST["delete_patient"])) {
             }
         }
         ?>
-
+<hr>
         <h1>Add Patient</h1>
         <form method="post">
             <div class="form-group">
@@ -394,7 +394,7 @@ if (isset($_POST["delete_patient"])) {
             }
             ?>
         </form>
-
+        <hr>
         <h1>Make Appointment</h1>
         <form method="post">
             <div class="form-group">
@@ -422,7 +422,7 @@ if (isset($_POST["delete_patient"])) {
             </div>
             <button type="submit" name="make_appointment" class="btn btn-primary">Make Appointment</button>
         </form>
-
+        <hr>
         <h1>Edit Patient Details</h1>
         <form method="post">
             <div class="form-group">
@@ -459,7 +459,7 @@ if (isset($_POST["delete_patient"])) {
             </div>
             <button type="submit" name="update_patient" class="btn btn-primary">Update Patient Details</button>
         </form>
-
+        <hr>
         <!-- HTML Form for Editing Appointment -->
         <h1>Edit Appointment</h1>
         <form method="post">
@@ -498,7 +498,7 @@ if (isset($_POST["delete_patient"])) {
             </div>
             <button type="submit" name="edit_appointment" class="btn btn-primary">Edit Appointment</button>
         </form>
-
+        <hr>
         <h1>Delete Patient</h1>
         <form method="post">
             <div class="form-group">
@@ -513,7 +513,7 @@ if (isset($_POST["delete_patient"])) {
             </div>
             <button type="submit" name="delete_patient" class="btn btn-danger">Delete Patient</button>
         </form>
-
+        <hr>
         <h1>Search</h1>
         <form method="post">
             <div class="input-group mb-3">
