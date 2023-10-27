@@ -1,7 +1,7 @@
 <?php
 $host = "localhost"; // Hostname
 $username = "root"; // MySQL username
-$password = "sys@123"; // MySQL password
+$password = ""; // MySQL password
 $database = "pathologylab"; // Database name
 
 // Create a connection to the database

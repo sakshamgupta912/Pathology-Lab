@@ -5,7 +5,6 @@ require 'connection.php';
 function addPatient($name, $email, $dob, $gender, $contact, $address)
 {
     global $mysqli;
-
     // Validate the contact number
     if (!preg_match('/^\d{10}$/', $contact)) {
         return "Error: Contact number must be exactly 10 digits.";
@@ -23,7 +22,7 @@ function addPatient($name, $email, $dob, $gender, $contact, $address)
 }
 
 // Function to make an appointment
-function makeAppointment($patientID, $appointmentDate, $appointmentTime)
+function makeAppointment($patientID, $appointmentDate, $appointmentTime, $testType)
 {
     global $mysqli;
 
@@ -34,12 +33,22 @@ function makeAppointment($patientID, $appointmentDate, $appointmentTime)
 
     $stmt = $mysqli->prepare("INSERT INTO appointment (PatientID, AppointmentDate, AppointmentTime) VALUES (?, ?, ?)");
     $stmt->bind_param("iss", $patientID, $appointmentDate, $appointmentTime);
-
+    
     if ($stmt->execute()) {
+        // Get the auto-incremented AppointmentID
+        $appointment_id = $mysqli->insert_id;
+    
+        $testType_query = "INSERT INTO $testType (AppointmentID) VALUES ('$appointment_id')";
+        if ($mysqli->query($testType_query) === TRUE) {
+            // echo '<script>alert("Data inserted successfully.");</script>';
+        } else {
+            echo '<script>alert("Error inserting data: ' . $mysqli->error . '");</script>';
+        }
         return "Appointment made successfully!";
     } else {
         return "Error: " . $stmt->error;
     }
+    
     $stmt->close();
 }
 
@@ -71,7 +80,7 @@ $error_message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    
+
     if (isset($_POST["add_patient"])) {
         $name = $_POST["name"];
         $email = $_POST["email"];
@@ -94,14 +103,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $patientID = $_POST["patient_id"];
         $appointmentDate = $_POST["appointment_date"];
         $appointmentTime = $_POST["appointment_time"];
+        $testType = $_POST["testType"];
 
-        $result = makeAppointment($patientID, $appointmentDate, $appointmentTime);
+        $result = makeAppointment($patientID, $appointmentDate, $appointmentTime, $testType);
 
         if (strpos($result, "Error:") === 0) {
             echo '<script>alert("' . $result . '");</script>';
         } else {
             echo '<script>alert("Success");</script>';
         }
+
+
     }
 }
 
@@ -309,37 +321,38 @@ if (isset($_POST["delete_patient"])) {
 </head>
 
 <body>
-    <div class="container mt-5">
-        <h1>Appointments for a Date</h1>
+    <div class="container ">
+        <h1 style='text-align:center'>Admin Dashboard</h1>
+        <h2>Appointments for a Date</h2>
         <form method="post">
             <input type="date" name="selected_date" required>
             <input type="submit" name="display_appointments" value="Display Appointments">
         </form>
-        <?php 
+        <?php
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if (isset($_POST["display_appointments"])) {
                 $selectedDate = $_POST["selected_date"];
-        
+
                 // Query to fetch appointments for the selected date from the SQL view
                 $query = "SELECT * FROM appointments_for_date WHERE AppointmentDate = ?";
                 $stmt = $mysqli->prepare($query);
                 $stmt->bind_param("s", $selectedDate);
                 $stmt->execute();
                 $result = $stmt->get_result();
-        
+
                 if ($result->num_rows > 0) {
-                    
+
                     echo '<h5 class="mt-3">Appointments for ' . $selectedDate . '</h5>';
                     echo '</div>'; // Close the previous container
-        
+
                     echo '<div class="container mt-3">';
                     echo '<div class="table-responsive">';
                     echo '<table class="table table-striped">';
                     echo '<thead class="thead-dark">';
                     echo '<tr><th>Appointment ID</th><th>Patient Name</th><th>Appointment Date</th><th>Appointment Time</th></tr>';
                     echo '</thead><tbody>';
-        
+
                     while ($row = $result->fetch_assoc()) {
                         echo '<tr>';
                         echo '<td>' . $row['AppointmentID'] . '</td>';
@@ -348,22 +361,21 @@ if (isset($_POST["delete_patient"])) {
                         echo '<td>' . $row['AppointmentTime'] . '</td>';
                         echo '</tr>';
                     }
-        
+
                     echo '</tbody></table>';
                     echo '</div>'; // .table-responsive
-                    
+
                 } else {
-                    
+
                     echo 'No appointments found for ' . $selectedDate;
-                   
                 }
-        
+
                 $stmt->close();
             }
         }
         ?>
-<hr>
-        <h1>Add Patient</h1>
+        <hr>
+        <h2>Add Patient</h2>
         <form method="post">
             <div class="form-group">
                 <input type="text" name="name" placeholder="Name" class="form-control" required>
@@ -395,7 +407,7 @@ if (isset($_POST["delete_patient"])) {
             ?>
         </form>
         <hr>
-        <h1>Make Appointment</h1>
+        <h2>Make Appointment</h2>
         <form method="post">
             <div class="form-group">
                 <select name="patient_id" class="form-control" required>
@@ -420,10 +432,18 @@ if (isset($_POST["delete_patient"])) {
                     ?>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="testType">Select Test Type:</label>
+                <select name="testType" class="form-control" required>
+                    <option value="bloodtest">Blood Test</option>
+                    <option value="urinetest">Urine Test</option>
+                    <option value="radiologytest">Radiology Test</option>
+                </select>
+            </div>
             <button type="submit" name="make_appointment" class="btn btn-primary">Make Appointment</button>
         </form>
         <hr>
-        <h1>Edit Patient Details</h1>
+        <h2>Edit Patient Details</h2>
         <form method="post">
             <div class="form-group">
                 <select name="edit_patient_id" class="form-control" required>
@@ -461,7 +481,7 @@ if (isset($_POST["delete_patient"])) {
         </form>
         <hr>
         <!-- HTML Form for Editing Appointment -->
-        <h1>Edit Appointment</h1>
+        <h2>Edit Appointment</h2>
         <form method="post">
             <div class="form-group">
                 <select name="edit_appointment_id" class="form-control" required>
@@ -499,7 +519,7 @@ if (isset($_POST["delete_patient"])) {
             <button type="submit" name="edit_appointment" class="btn btn-primary">Edit Appointment</button>
         </form>
         <hr>
-        <h1>Delete Patient</h1>
+        <h2>Delete Patient</h2>
         <form method="post">
             <div class="form-group">
                 <select name="delete_patient_id" class="form-control" required>
@@ -514,7 +534,7 @@ if (isset($_POST["delete_patient"])) {
             <button type="submit" name="delete_patient" class="btn btn-danger">Delete Patient</button>
         </form>
         <hr>
-        <h1>Search</h1>
+        <h2>Search</h2>
         <form method="post">
             <div class="input-group mb-3">
                 <input type="text" name="search_query" class="form-control" placeholder="Search for patients by name or email" aria-label="Search" aria-describedby="search-button">

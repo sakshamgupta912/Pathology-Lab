@@ -1,15 +1,16 @@
 <?php
 require 'connection.php';
 
-// Function to fetch all appointments
-function getAllAppointments() {
+// Function to fetch all appointments by test type
+function getAppointmentsByTestType($testType) {
     global $mysqli;
-
     $sql = "SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name 
             FROM appointment 
-            INNER JOIN patient ON appointment.PatientID = patient.PatientID";
+            INNER JOIN patient ON appointment.PatientID = patient.PatientID
+            WHERE appointment.AppointmentID IN (
+                SELECT AppointmentID FROM $testType
+            )";
     $result = $mysqli->query($sql);
-
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
@@ -61,57 +62,56 @@ function addRadiologyTestReadings($scanType, $scanDate, $appointmentID) {
 // Initialize the error message
 $error_message = "";
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_readings"])) {
-    $selectedAppointmentID = $_POST["appointment_id"];
-    $bloodType = $_POST["blood_type"];
-    $haemoglobinLevel = $_POST["haemoglobin_level"];
-    $wbCount = $_POST["wb_count"];
-    $rbcCount = $_POST["rbc_count"];
-    $plateletCount = $_POST["platelet_count"];
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST["add_readings"])) {
+        $selectedAppointmentID = $_POST["appointment_id"];
+        $bloodType = $_POST["blood_type"];
+        $haemoglobinLevel = $_POST["haemoglobin_level"];
+        $wbCount = $_POST["wb_count"];
+        $rbcCount = $_POST["rbc_count"];
+        $plateletCount = $_POST["platelet_count"];
 
-    $result = addBloodTestReadings($bloodType, $haemoglobinLevel, $wbCount, $rbcCount, $plateletCount, $selectedAppointmentID);
+        $result = addBloodTestReadings($bloodType, $haemoglobinLevel, $wbCount, $rbcCount, $plateletCount, $selectedAppointmentID);
 
-    if (strpos($result, "Error:") === false) {
-        $error_message = "Blood Test readings added successfully!";
-    } else {
-        $error_message = $result;
-    }
-}
+        if (strpos($result, "Error:") === false) {
+            $error_message = "Blood Test readings added successfully!";
+        } else {
+            $error_message = $result;
+        }
+    } elseif (isset($_POST["add_urine_readings"])) {
+        $selectedAppointmentID = $_POST["appointment_id_urine"];
+        $urineColor = $_POST["urine_color"];
+        $urineAppearance = $_POST["urine_appearance"];
+        $pHLevel = $_POST["ph_level"];
+        $specificGravity = $_POST["specific_gravity"];
+        $proteinPresence = $_POST["protein_presence"];
+        $glucoseLevel = $_POST["glucose_level"];
+        $ketoneLevel = $_POST["ketone_level"];
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_urine_readings"])) {
-    $selectedAppointmentID = $_POST["appointment_id_urine"];
-    $urineColor = $_POST["urine_color"];
-    $urineAppearance = $_POST["urine_appearance"];
-    $pHLevel = $_POST["ph_level"];
-    $specificGravity = $_POST["specific_gravity"];
-    $proteinPresence = $_POST["protein_presence"];
-    $glucoseLevel = $_POST["glucose_level"];
-    $ketoneLevel = $_POST["ketone_level"];
+        $result = addUrineTestReadings($urineColor, $urineAppearance, $pHLevel, $specificGravity, $proteinPresence, $glucoseLevel, $ketoneLevel, $selectedAppointmentID);
 
-    $result = addUrineTestReadings($urineColor, $urineAppearance, $pHLevel, $specificGravity, $proteinPresence, $glucoseLevel, $ketoneLevel, $selectedAppointmentID);
+        if (strpos($result, "Error:") === false) {
+            $error_message = "Urine Test readings added successfully!";
+        } else {
+            $error_message = $result;
+        }
+    } elseif (isset($_POST["add_radiology_test"])) {
+        $selectedAppointmentID = $_POST["appointment_id_radiology"];
+        $scanType = $_POST["scan_type"];
+        $scanDate = $_POST["scan_date"];
 
-    if (strpos($result, "Error:") === false) {
-        $error_message = "Urine Test readings added successfully!";
-    } else {
-        $error_message = $result;
-    }
-}
+        $result = addRadiologyTestReadings($scanType, $scanDate, $selectedAppointmentID);
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_radiology_test"])) {
-    $selectedAppointmentID = $_POST["appointment_id_radiology"];
-    $scanType = $_POST["scan_type"];
-    $scanDate = $_POST["scan_date"];
-
-    $result = addRadiologyTestReadings($scanType, $scanDate, $selectedAppointmentID);
-
-    if (strpos($result, "Error:") === false) {
-        $error_message = "Radiology Test added successfully!";
-    } else {
-        $error_message = $result;
+        if (strpos($result, "Error:") === false) {
+            $error_message = "Radiology Test added successfully!";
+        } else {
+            $error_message = $result;
+        }
     }
 }
 
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -122,10 +122,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_radiology_test"]))
 
     <h2>Add Blood Test Readings</h2>
     <form method="post" action="">
-        <label for="appointment_id">Select an Appointment:</label>
+        <label for="appointment_id">Select an Appointment for Blood Test:</label>
         <select name="appointment_id" id="appointment_id">
             <?php
-            $appointments = getAllAppointments();
+            $appointments = getAppointmentsByTestType('bloodtest');
             foreach ($appointments as $appointment) {
                 echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
             }
@@ -152,9 +152,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_radiology_test"]))
 
     <h2>Add Urine Test Readings</h2>
     <form method="post" action="">
-        <label for="appointment_id_urine">Select an Appointment:</label>
+        <label for="appointment_id_urine">Select an Appointment for Urine Test:</label>
         <select name="appointment_id_urine" id="appointment_id_urine">
             <?php
+            $appointments = getAppointmentsByTestType('urinetest');
             foreach ($appointments as $appointment) {
                 echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
             }
@@ -185,9 +186,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_radiology_test"]))
 
     <h2>Add Radiology Test</h2>
     <form method="post" action="">
-        <label for="appointment_id_radiology">Select an Appointment:</label>
+        <label for="appointment_id_radiology">Select an Appointment for Radiology Test:</label>
         <select name="appointment_id_radiology" id="appointment_id_radiology">
             <?php
+            $appointments = getAppointmentsByTestType('radiologytest');
             foreach ($appointments as $appointment) {
                 echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
             }
@@ -199,7 +201,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_radiology_test"]))
             <!-- Radiology Test fields here -->
             <label for="scan_type">Scan Type:</label>
             <input type="text" name="scan_type" id="scan_type"><br>
-            <label for "scan_date">Scan Date:</label>
+            <label for="scan_date">Scan Date:</label>
             <input type="text" name="scan_date" id="scan_date"><br>
         </div>
 
