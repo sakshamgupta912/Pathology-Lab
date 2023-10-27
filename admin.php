@@ -2,7 +2,8 @@
 require 'connection.php';
 
 // Function to add a patient
-function addPatient($name, $dob, $gender, $contact, $address) {
+function addPatient($name, $dob, $gender, $contact, $address)
+{
     global $mysqli;
 
     // Validate the contact number
@@ -22,7 +23,8 @@ function addPatient($name, $dob, $gender, $contact, $address) {
 }
 
 // Function to make an appointment
-function makeAppointment($patientID, $appointmentDate, $appointmentTime) {
+function makeAppointment($patientID, $appointmentDate, $appointmentTime)
+{
     global $mysqli;
 
     // Check if the slot is available before making an appointment
@@ -42,7 +44,8 @@ function makeAppointment($patientID, $appointmentDate, $appointmentTime) {
 }
 
 // Function to check if an appointment slot is available
-function isSlotAvailable($appointmentDate, $appointmentTime) {
+function isSlotAvailable($appointmentDate, $appointmentTime)
+{
     global $mysqli;
 
     $stmt = $mysqli->prepare("SELECT AppointmentID FROM appointment WHERE AppointmentDate = ? AND AppointmentTime = ?");
@@ -79,8 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Check for errors and display error message
         if (strpos($result, "Error:") === 0) {
             echo '<script>alert("' . $result . '");</script>';
-        }
-        else{
+        } else {
             echo '<script>alert("Success");</script>';
         }
     } elseif (isset($_POST["make_appointment"])) {
@@ -94,19 +96,106 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (strpos($result, "Error:") === 0) {
             echo '<script>alert("' . $result . '");</script>';
-        }
-        else{
+        } else {
             echo '<script>alert("Success");</script>';
         }
     }
 }
+
+// Function to update patient details
+function updatePatient($patientID, $name, $dob, $gender, $contact, $address)
+{
+    global $mysqli;
+
+    // Fetch the current patient details
+    $stmt = $mysqli->prepare("SELECT Name, DOB, Gender, Contact, Address FROM patient WHERE PatientID = ?");
+    $stmt->bind_param("i", $patientID);
+    $stmt->execute();
+    $stmt->store_result();
+    $stmt->bind_result($currentName, $currentDOB, $currentGender, $currentContact, $currentAddress);
+    $stmt->fetch();
+    $stmt->close();
+
+    // Construct the SQL update query based on the non-empty fields
+    $updateQuery = "UPDATE patient SET ";
+    $updateParams = array();
+
+    if (!empty($name)) {
+        $updateQuery .= "Name = ?, ";
+        $updateParams[] = $name;
+    }
+    if (!empty($dob)) {
+        $updateQuery .= "DOB = ?, ";
+        $updateParams[] = $dob;
+    }
+    if (!empty($gender)) {
+        $updateQuery .= "Gender = ?, ";
+        $updateParams[] = $gender;
+    }
+    if (!empty($contact)) {
+        $updateQuery .= "Contact = ?, ";
+        $updateParams[] = $contact;
+    }
+    if (!empty($address)) {
+        $updateQuery .= "Address = ?, ";
+        $updateParams[] = $address;
+    }
+
+    // Remove the trailing comma and space
+    $updateQuery = rtrim($updateQuery, ", ");
+
+    // Append the WHERE clause to specify the patient
+    $updateQuery .= " WHERE PatientID = ?";
+
+    // Bind the updated parameters to the query
+    $stmt = $mysqli->prepare($updateQuery);
+    $bindTypes = str_repeat('s', count($updateParams)) . 'i';
+    // Construct the bind_param dynamically
+    $bindParams = array_merge(array($bindTypes), $updateParams, array($patientID));
+
+    $bindParamsReferences = array();
+    foreach ($bindParams as $key => $value) {
+        $bindParamsReferences[$key] = &$bindParams[$key];
+    }
+
+    call_user_func_array(array($stmt, 'bind_param'), $bindParamsReferences);
+
+
+    if ($stmt->execute()) {
+        return "Patient details updated successfully!";
+    } else {
+        return "Error: " . $stmt->error;
+    }
+    $stmt->close();
+}
+
+if (isset($_POST["update_patient"])) {
+    $editPatientID = $_POST["edit_patient_id"];
+    $editName = $_POST["edit_name"];
+    $editDOB = $_POST["edit_dob"];
+    $editGender = $_POST["edit_gender"];
+    $editContact = $_POST["edit_contact"];
+    $editAddress = $_POST["edit_address"];
+
+    $result = updatePatient($editPatientID, $editName, $editDOB, $editGender, $editContact, $editAddress);
+
+    if (strpos($result, "Error:") === 0) {
+        echo '<script>alert("' . $result . '");</script>';
+    } else {
+        echo '<script>alert("Success");</script>';
+    }
+}
+
+
 ?>
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Admin Panel</title>
 </head>
+
 <body>
     <h1>Add Patient</h1>
     <form method="post">
@@ -147,7 +236,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ?>
         </select><br>
         <input type="submit" name="make_appointment" value="Make Appointment">
-      
+
     </form>
+
+    <h1>Edit Patient Details</h1>
+    <form method="post">
+        <select name="edit_patient_id" required>
+            <!-- Display a list of patients for selection -->
+            <?php
+            $result = $mysqli->query("SELECT PatientID, Name FROM patient");
+            while ($row = $result->fetch_assoc()) {
+                echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " " . $row['Name'] . "</option>";
+            }
+            ?>
+        </select><br>
+        <input type="text" name="edit_name" placeholder="Name">
+        <input type="date" name="edit_dob" placeholder="Date of Birth">
+        <select name="edit_gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+        </select>
+        <input type="text" name="edit_contact" placeholder="Contact">
+        <textarea name="edit_address" placeholder="Address"></textarea>
+        <input type="submit" name="update_patient" value="Update Patient Details">
+    </form>
+
 </body>
+
 </html>
