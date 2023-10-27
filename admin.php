@@ -2,7 +2,7 @@
 require 'connection.php';
 
 // Function to add a patient
-function addPatient($name, $dob, $gender, $contact, $address)
+function addPatient($name,$email, $dob, $gender, $contact, $address)
 {
     global $mysqli;
 
@@ -11,8 +11,8 @@ function addPatient($name, $dob, $gender, $contact, $address)
         return "Error: Contact number must be exactly 10 digits.";
     }
 
-    $stmt = $mysqli->prepare("INSERT INTO patient (Name, DOB, Gender, Contact, Address) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssss", $name, $dob, $gender, $contact, $address);
+    $stmt = $mysqli->prepare("INSERT INTO patient (Name,Email, DOB, Gender, Contact, Address) VALUES (?,?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssss", $name,$email ,$dob, $gender, $contact, $address);
 
     if ($stmt->execute()) {
         return "Patient added successfully!";
@@ -72,12 +72,13 @@ $error_message = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST["add_patient"])) {
         $name = $_POST["name"];
+        $email = $_POST["email"];
         $dob = $_POST["dob"];
         $gender = $_POST["gender"];
         $contact = $_POST["contact"];
         $address = $_POST["address"];
 
-        $result = addPatient($name, $dob, $gender, $contact, $address);
+        $result = addPatient($name,$email, $dob, $gender, $contact, $address);
 
         // Check for errors and display error message
         if (strpos($result, "Error:") === 0) {
@@ -103,16 +104,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 // Function to update patient details
-function updatePatient($patientID, $name, $dob, $gender, $contact, $address)
+function updatePatient($patientID, $name,$email, $dob, $gender, $contact, $address)
 {
     global $mysqli;
 
     // Fetch the current patient details
-    $stmt = $mysqli->prepare("SELECT Name, DOB, Gender, Contact, Address FROM patient WHERE PatientID = ?");
+    $stmt = $mysqli->prepare("SELECT Name,Email, DOB, Gender, Contact, Address FROM patient WHERE PatientID = ?");
     $stmt->bind_param("i", $patientID);
     $stmt->execute();
     $stmt->store_result();
-    $stmt->bind_result($currentName, $currentDOB, $currentGender, $currentContact, $currentAddress);
+    $stmt->bind_result($currentName,$currentEmail,$currentDOB, $currentGender, $currentContact, $currentAddress);
     $stmt->fetch();
     $stmt->close();
 
@@ -123,6 +124,10 @@ function updatePatient($patientID, $name, $dob, $gender, $contact, $address)
     if (!empty($name)) {
         $updateQuery .= "Name = ?, ";
         $updateParams[] = $name;
+    }
+    if (!empty($email)) {
+        $updateQuery .= "Email = ?, ";
+        $updateParams[] = $email;
     }
     if (!empty($dob)) {
         $updateQuery .= "DOB = ?, ";
@@ -172,12 +177,13 @@ function updatePatient($patientID, $name, $dob, $gender, $contact, $address)
 if (isset($_POST["update_patient"])) {
     $editPatientID = $_POST["edit_patient_id"];
     $editName = $_POST["edit_name"];
+    $editEmail= $_POST["edit_email"];
     $editDOB = $_POST["edit_dob"];
     $editGender = $_POST["edit_gender"];
     $editContact = $_POST["edit_contact"];
     $editAddress = $_POST["edit_address"];
 
-    $result = updatePatient($editPatientID, $editName, $editDOB, $editGender, $editContact, $editAddress);
+    $result = updatePatient($editPatientID, $editName,$editEmail, $editDOB, $editGender, $editContact, $editAddress);
 
     if (strpos($result, "Error:") === 0) {
         echo '<script>alert("' . $result . '");</script>';
@@ -253,6 +259,7 @@ if (isset($_POST["edit_appointment"])) {
     <h1>Add Patient</h1>
     <form method="post">
         <input type="text" name="name" placeholder="Name" required><br>
+        <input type="email" name="email" placeholder="Email" required><br>
         <input type="date" name="dob" required><br>
         <label for="gender">Gender:</label>
         <select name="gender" id="gender" required>
@@ -304,6 +311,7 @@ if (isset($_POST["edit_appointment"])) {
             ?>
         </select><br>
         <input type="text" name="edit_name" placeholder="Name">
+        <input type="email" name="edit_email" placeholder="Email">
         <input type="date" name="edit_dob" placeholder="Date of Birth">
         <select name="edit_gender">
             <option value="Male">Male</option>
