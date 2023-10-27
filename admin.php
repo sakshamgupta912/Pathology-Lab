@@ -25,6 +25,11 @@ function addPatient($name, $dob, $gender, $contact, $address) {
 function makeAppointment($patientID, $appointmentDate, $appointmentTime) {
     global $mysqli;
 
+    // Check if the slot is available before making an appointment
+    if (!isSlotAvailable($appointmentDate, $appointmentTime)) {
+        return "Error: This appointment slot is already booked.";
+    }
+
     $stmt = $mysqli->prepare("INSERT INTO appointment (PatientID, AppointmentDate, AppointmentTime) VALUES (?, ?, ?)");
     $stmt->bind_param("iss", $patientID, $appointmentDate, $appointmentTime);
 
@@ -34,6 +39,18 @@ function makeAppointment($patientID, $appointmentDate, $appointmentTime) {
         return "Error: " . $stmt->error;
     }
     $stmt->close();
+}
+
+// Function to check if an appointment slot is available
+function isSlotAvailable($appointmentDate, $appointmentTime) {
+    global $mysqli;
+
+    $stmt = $mysqli->prepare("SELECT AppointmentID FROM appointment WHERE AppointmentDate = ? AND AppointmentTime = ?");
+    $stmt->bind_param("ss", $appointmentDate, $appointmentTime);
+    $stmt->execute();
+    $stmt->store_result();
+
+    return $stmt->num_rows === 0;
 }
 
 $fixedAppointmentTimes = [
@@ -58,17 +75,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $address = $_POST["address"];
 
         $result = addPatient($name, $dob, $gender, $contact, $address);
-        
+
         // Check for errors and display error message
         if (strpos($result, "Error:") === 0) {
-            $error_message = $result;
+            echo '<script>alert("' . $result . '");</script>';
+        }
+        else{
+            echo '<script>alert("Success");</script>';
         }
     } elseif (isset($_POST["make_appointment"])) {
+        $error_message = "";
+
         $patientID = $_POST["patient_id"];
         $appointmentDate = $_POST["appointment_date"];
         $appointmentTime = $_POST["appointment_time"];
 
         $result = makeAppointment($patientID, $appointmentDate, $appointmentTime);
+
+        if (strpos($result, "Error:") === 0) {
+            echo '<script>alert("' . $result . '");</script>';
+        }
+        else{
+            echo '<script>alert("Success");</script>';
+        }
     }
 }
 ?>
@@ -105,7 +134,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <?php
             $result = $mysqli->query("SELECT PatientID, Name FROM patient");
             while ($row = $result->fetch_assoc()) {
-                echo "<option value='" . $row['PatientID'] . "'>" .$row['PatientID'] . " ".  $row['Name']. "</option>";
+                echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " " . $row['Name'] . "</option>";
             }
             ?>
         </select><br>
@@ -118,6 +147,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ?>
         </select><br>
         <input type="submit" name="make_appointment" value="Make Appointment">
+      
     </form>
 </body>
 </html>
