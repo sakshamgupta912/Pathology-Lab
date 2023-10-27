@@ -105,6 +105,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
+// Function to search patients
+function searchPatients($searchQuery)
+{
+    global $mysqli;
+
+    $searchQuery = "%" . $searchQuery . "%"; // Add wildcards for partial matching
+    $stmt = $mysqli->prepare("SELECT * FROM patient WHERE Name LIKE ? OR Email LIKE ?");
+    $stmt->bind_param("ss", $searchQuery, $searchQuery);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    return $result;
+}
+
+if (isset($_POST["search"])) {
+    $searchQuery = $_POST["search_query"];
+    $search_results = searchPatients($searchQuery);
+}
+
 // Function to update patient details
 function updatePatient($patientID, $name, $email, $dob, $gender, $contact, $address)
 {
@@ -494,6 +513,53 @@ if (isset($_POST["delete_patient"])) {
             </div>
             <button type="submit" name="delete_patient" class="btn btn-danger">Delete Patient</button>
         </form>
+
+        <h1>Search</h1>
+        <form method="post">
+            <div class="input-group mb-3">
+                <input type="text" name="search_query" class="form-control" placeholder="Search for patients by name or email" aria-label="Search" aria-describedby="search-button">
+                <div class="input-group-append">
+                    <button type="submit" name="search" class="btn btn-primary" id="search-button">Search</button>
+                </div>
+            </div>
+        </form>
+
+        <?php if (isset($_POST["search"])) : ?>
+            <h2>Search Results</h2>
+
+            <?php if ($search_results->num_rows > 0) : ?>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>DOB</th>
+                                <th>Gender</th>
+                                <th>Contact</th>
+                                <th>Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($row = $search_results->fetch_assoc()) : ?>
+                                <tr>
+                                    <td><?= $row['PatientID'] ?></td>
+                                    <td><?= $row['Name'] ?></td>
+                                    <td><?= $row['Email'] ?></td>
+                                    <td><?= $row['DOB'] ?></td>
+                                    <td><?= $row['Gender'] ?></td>
+                                    <td><?= $row['Contact'] ?></td>
+                                    <td><?= $row['Address'] ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else : ?>
+                <p>No patient records found.</p>
+            <?php endif; ?>
+        <?php endif; ?>
     </div>
 
     <!-- Add Bootstrap JavaScript and jQuery If Needed -->
