@@ -34,29 +34,61 @@ function getAppointmentsByTestType($testType) {
 }
 
 // Function to add test readings for Blood Test
+// Function to add or update test readings for Blood Test
 function addBloodTestReadings($bloodType, $haemoglobinLevel, $wbCount, $rbcCount, $plateletCount, $appointmentID) {
     global $mysqli;
 
-    $stmt = $mysqli->prepare("INSERT INTO bloodtest (BloodType, HaemoglobinLevel, WBCount, RBCCount, PlateletCount, AppointmentID) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $bloodType, $haemoglobinLevel, $wbCount, $rbcCount, $plateletCount, $appointmentID);
+    // Check if a row with the same AppointmentID already exists
+    $stmt = $mysqli->prepare("SELECT COUNT(*) as count FROM bloodtest WHERE AppointmentID = ?");
+    $stmt->bind_param("s", $appointmentID);
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($count > 0) {
+        // A row with the same AppointmentID exists, update the values
+        $stmt = $mysqli->prepare("UPDATE bloodtest SET BloodType = ?, HaemoglobinLevel = ?, WBCount = ?, RBCCount = ?, PlateletCount = ? WHERE AppointmentID = ?");
+        $stmt->bind_param("ssssss", $bloodType, $haemoglobinLevel, $wbCount, $rbcCount, $plateletCount, $appointmentID);
+    } else {
+        // No row with the same AppointmentID, insert a new row
+        $stmt = $mysqli->prepare("INSERT INTO bloodtest (BloodType, HaemoglobinLevel, WBCount, RBCCount, PlateletCount, AppointmentID) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $bloodType, $haemoglobinLevel, $wbCount, $rbcCount, $plateletCount, $appointmentID);
+    }
     
     if ($stmt->execute()) {
-        return "Blood Test readings added successfully!";
+        return "Blood Test readings added or updated successfully!";
     } else {
         return "Error: " . $stmt->error;
     }
     $stmt->close();
 }
 
+
 // Function to add test readings for Urine Test
 function addUrineTestReadings($urineColor, $urineAppearance, $pHLevel, $specificGravity, $proteinPresence, $glucoseLevel, $ketoneLevel, $appointmentID) {
     global $mysqli;
 
-    $stmt = $mysqli->prepare("INSERT INTO urinetest (UrineColor, UrineAppearance, pHLevel, SpecificGravity, ProteinPresence, GlucoseLevel, KetoneLevel, AppointmentID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssssss", $urineColor, $urineAppearance, $pHLevel, $specificGravity, $proteinPresence, $glucoseLevel, $ketoneLevel, $appointmentID);
+    // Check if a row with the same AppointmentID already exists
+    $stmt = $mysqli->prepare("SELECT COUNT(*) as count FROM urinetest WHERE AppointmentID = ?");
+    $stmt->bind_param("s", $appointmentID);
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($count > 0) {
+        // A row with the same AppointmentID exists, update the values
+        $stmt = $mysqli->prepare("UPDATE urinetest SET UrineColor = ?, UrineAppearance = ?, pHLevel = ?, SpecificGravity = ?, ProteinPresence = ?, GlucoseLevel = ?, KetoneLevel = ? WHERE AppointmentID = ?");
+        $stmt->bind_param("ssssssss", $urineColor, $urineAppearance, $pHLevel, $specificGravity, $proteinPresence, $glucoseLevel, $ketoneLevel, $appointmentID);
+    } else {
+        // No row with the same AppointmentID, insert a new row
+        $stmt = $mysqli->prepare("INSERT INTO urinetest (UrineColor, UrineAppearance, pHLevel, SpecificGravity, ProteinPresence, GlucoseLevel, KetoneLevel, AppointmentID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssss", $urineColor, $urineAppearance, $pHLevel, $specificGravity, $proteinPresence, $glucoseLevel, $ketoneLevel, $appointmentID);
+    }
     
     if ($stmt->execute()) {
-        return "Urine Test readings added successfully!";
+        return "Urine Test readings added or updated successfully!";
     } else {
         return "Error: " . $stmt->error;
     }
@@ -67,11 +99,26 @@ function addUrineTestReadings($urineColor, $urineAppearance, $pHLevel, $specific
 function addRadiologyTestReadings($scanType, $scanDate, $appointmentID) {
     global $mysqli;
 
-    $stmt = $mysqli->prepare("INSERT INTO radiologytest (ScanType, ScanDate, AppointmentID) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $scanType, $scanDate, $appointmentID);
+    // Check if a row with the same AppointmentID already exists
+    $stmt = $mysqli->prepare("SELECT COUNT(*) as count FROM radiologytest WHERE AppointmentID = ?");
+    $stmt->bind_param("s", $appointmentID);
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
+    $stmt->close();
+
+    if ($count > 0) {
+        // A row with the same AppointmentID exists, update the values
+        $stmt = $mysqli->prepare("UPDATE radiologytest SET ScanType = ?, ScanDate = ? WHERE AppointmentID = ?");
+        $stmt->bind_param("sss", $scanType, $scanDate, $appointmentID);
+    } else {
+        // No row with the same AppointmentID, insert a new row
+        $stmt = $mysqli->prepare("INSERT INTO radiologytest (ScanType, ScanDate, AppointmentID) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $scanType, $scanDate, $appointmentID);
+    }
     
     if ($stmt->execute()) {
-        return "Radiology Test readings added successfully!";
+        return "Radiology Test added or updated successfully!";
     } else {
         return "Error: " . $stmt->error;
     }
