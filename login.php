@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require 'connection.php'; // Include your database connection file
