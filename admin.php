@@ -1,4 +1,23 @@
 <?php
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['role'])) {
+    header("Location: index.php"); // Redirect to the login page if not logged in
+    exit();
+}
+
+// Check if the user's role is "admin"
+if ($_SESSION['role'] !== 'admin') {
+    echo "Access denied. You do not have permission to access this page.";
+    exit();
+}
+
+// The rest of your "admin.php" code here
+// Only users with the "admin" role can access this content
+?>
+
+<?php
 require 'connection.php';
 
 // Function to add a patient

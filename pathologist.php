@@ -10,8 +10,6 @@ if (!isset($_SESSION['role'])) {
 // Check if the user's role is "pathologist"
 if ($_SESSION['role'] !== 'pathologist') {
     echo "Access denied. You do not have permission to access this page.";
-    header("Location: index.php"); // Redirect to the login page if not logged in
-
     exit();
 }
 

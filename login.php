@@ -1,19 +1,4 @@
-<?php
-session_start();
 
-// Check if the user is logged in
-if (!isset($_SESSION['role'])) {
-    header("Location: index.php"); // Redirect to the login page if not logged in
-    exit();
-}
-
-// Check if the user's role 
-if ($_SESSION['role'] !== 'admin') {
-    echo "Access denied. You do not have permission to access this page.";
-    header("Location: index.php"); // Redirect to the login page if not logged in
-
-    exit();
-} ?>
 <?php
 session_start();
 require 'connection.php'; // Include your database connection file
