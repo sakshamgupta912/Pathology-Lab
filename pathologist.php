@@ -182,102 +182,142 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html>
 <head>
     <title>Pathologist</title>
+    <!-- Add Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Pathologist Dashboard</h1>
+    <div class="container">
+        <h1 class="mt-5">Pathologist Dashboard</h1>
 
-    <h2>Add Blood Test Readings</h2>
-    <form method="post" action="">
-        <label for="appointment_id">Select an Appointment for Blood Test:</label>
-        <select name="appointment_id" id="appointment_id">
-            <?php
-            $appointments = getAppointmentsByTestType('bloodtest');
-            foreach ($appointments as $appointment) {
-                echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
-            }
-            ?>
-        </select>
-        <br>
+        <h2 class="mt-4">Add Blood Test Readings</h2>
+        <form method="post" action="">
+            <div class="form-group">
+                <label for="appointment_id">Select an Appointment for Blood Test:</label>
+                <select class="form-control" name="appointment_id" id="appointment_id">
+                    <?php
+                    $appointments = getAppointmentsByTestType('bloodtest');
+                    foreach ($appointments as $appointment) {
+                        echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
+                    }
+                    ?>
+                </select>
+            </div>
 
-        <div id="bloodTest">
-            <!-- Blood Test fields here -->
-            <label for="blood_type">Blood Type:</label>
-            <input type="text" name="blood_type" id="blood_type"><br>
-            <label for="haemoglobin_level">Haemoglobin Level:</label>
-            <input type="text" name="haemoglobin_level" id="haemoglobin_level"><br>
-            <label for="wb_count">White Blood Cell (WBC) Count:</label>
-            <input type="text" name="wb_count" id="wb_count"><br>
-            <label for="rbc_count">Red Blood Cell (RBC) Count:</label>
-            <input type="text" name="rbc_count" id="rbc_count"><br>
-            <label for="platelet_count">Platelet Count:</label>
-            <input type="text" name="platelet_count" id="platelet_count"><br>
-        </div>
+            <div id="bloodTest">
+                <!-- Blood Test fields here -->
+                <div class="form-group">
+                    <label for="blood_type">Blood Type:</label>
+                    <input class="form-control" type="text" name="blood_type" id="blood_type">
+                </div>
+                <div class="form-group">
+                    <label for="haemoglobin_level">Haemoglobin Level:</label>
+                    <input class="form-control" type="text" name="haemoglobin_level" id="haemoglobin_level">
+                </div>
+                <div class="form-group">
+                    <label for="wb_count">White Blood Cell (WBC) Count:</label>
+                    <input class="form-control" type="text" name="wb_count" id="wb_count">
+                </div>
+                <div class="form-group">
+                    <label for="rbc_count">Red Blood Cell (RBC) Count:</label>
+                    <input class="form-control" type="text" name="rbc_count" id="rbc_count">
+                </div>
+                <div class="form-group">
+                    <label for="platelet_count">Platelet Count:</label>
+                    <input class="form-control" type="text" name="platelet_count" id="platelet_count">
+                </div>
+            </div>
 
-        <input type="submit" name="add_readings" value="Add Blood Test Readings">
-    </form>
+            <input class="btn btn-primary" type="submit" name="add_readings" value="Add Blood Test Readings">
+        </form>
 
-    <h2>Add Urine Test Readings</h2>
-    <form method="post" action="">
-        <label for="appointment_id_urine">Select an Appointment for Urine Test:</label>
-        <select name="appointment_id_urine" id="appointment_id_urine">
-            <?php
-            $appointments = getAppointmentsByTestType('urinetest');
-            foreach ($appointments as $appointment) {
-                echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
-            }
-            ?>
-        </select>
-        <br>
+        <h2 class="mt-4">Add Urine Test Readings</h2>
+        <form method="post" action="">
+            <div class="form-group">
+                <label for="appointment_id_urine">Select an Appointment for Urine Test:</label>
+                <select class="form-control" name="appointment_id_urine" id="appointment_id_urine">
+                    <?php
+                    $appointments = getAppointmentsByTestType('urinetest');
+                    foreach ($appointments as $appointment) {
+                        echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
+                    }
+                    ?>
+                </select>
+            </div>
 
-        <div id="urineTest">
-            <!-- Urine Test fields here -->
-            <label for="urine_color">Urine Color:</label>
-            <input type="text" name="urine_color" id="urine_color"><br>
-            <label for="urine_appearance">Urine Appearance:</label>
-            <input type="text" name="urine_appearance" id="urine_appearance"><br>
-            <label for="ph_level">pH Level:</label>
-            <input type="text" name="ph_level" id="ph_level"><br>
-            <label for="specific_gravity">Specific Gravity:</label>
-            <input type="text" name="specific_gravity" id="specific_gravity"><br>
-            <label for="protein_presence">Protein Presence:</label>
-            <input type="text" name="protein_presence" id="protein_presence"><br>
-            <label for="glucose_level">Glucose Level:</label>
-            <input type="text" name="glucose_level" id="glucose_level"><br>
-            <label for="ketone_level">Ketone Level:</label>
-            <input type="text" name="ketone_level" id="ketone_level"><br>
-        </div>
+            <div id="urineTest">
+                <!-- Urine Test fields here -->
+                <div class="form-group">
+                    <label for="urine_color">Urine Color:</label>
+                    <input class="form-control" type="text" name="urine_color" id="urine_color">
+                </div>
+                <div class="form-group">
+                    <label for="urine_appearance">Urine Appearance:</label>
+                    <input class="form-control" type="text" name="urine_appearance" id="urine_appearance">
+                </div>
+                <div class="form-group">
+                    <label for="ph_level">pH Level:</label>
+                    <input class="form-control" type="text" name="ph_level" id="ph_level">
+                </div>
+                <div class="form-group">
+                    <label for="specific_gravity">Specific Gravity:</label>
+                    <input class="form-control" type="text" name="specific_gravity" id="specific_gravity">
+                </div>
+                <div class="form-group">
+                    <label for="protein_presence">Protein Presence:</label>
+                    <input class="form-control" type="text" name="protein_presence" id="protein_presence">
+                </div>
+                <div class="form-group">
+                    <label for="glucose_level">Glucose Level:</label>
+                    <input class="form-control" type="text" name="glucose_level" id="glucose_level">
+                </div>
+                <div class="form-group">
+                    <label for="ketone_level">Ketone Level:</label>
+                    <input class="form-control" type="text" name="ketone_level" id="ketone_level">
+                </div>
+            </div>
 
-        <input type="submit" name="add_urine_readings" value="Add Urine Test Readings">
-    </form>
+            <input class="btn btn-primary" type="submit" name="add_urine_readings" value="Add Urine Test Readings">
+        </form>
 
-    <h2>Add Radiology Test</h2>
-    <form method="post" action="">
-        <label for="appointment_id_radiology">Select an Appointment for Radiology Test:</label>
-        <select name="appointment_id_radiology" id="appointment_id_radiology">
-            <?php
-            $appointments = getAppointmentsByTestType('radiologytest');
-            foreach ($appointments as $appointment) {
-                echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
-            }
-            ?>
-        </select>
-        <br>
+        <h2 class="mt-4">Add Radiology Test</h2>
+        <form method="post" action="">
+            <div class="form-group">
+                <label for="appointment_id_radiology">Select an Appointment for Radiology Test:</label>
+                <select class="form-control" name="appointment_id_radiology" id="appointment_id_radiology">
+                    <?php
+                    $appointments = getAppointmentsByTestType('radiologytest');
+                    foreach ($appointments as $appointment) {
+                        echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
+                    }
+                    ?>
+                </select>
+            </div>
 
-        <div id="radiologyTest">
-            <!-- Radiology Test fields here -->
-            <label for="scan_type">Scan Type:</label>
-            <input type="text" name="scan_type" id="scan_type"><br>
-            <label for="scan_date">Scan Date:</label>
-            <input type="text" name="scan_date" id="scan_date"><br>
-        </div>
+            <div id="radiologyTest">
+                <!-- Radiology Test fields here -->
+                <div class="form-group">
+                    <label for="scan_type">Scan Type:</label>
+                    <input class="form-control" type="text" name="scan_type" id="scan_type">
+                </div>
+                <div class="form-group">
+                    <label for="scan_date">Scan Date:</label>
+                    <input class="form-control" type="text" name="scan_date" id="scan_date">
+                </div>
+            </div>
 
-        <input type="submit" name="add_radiology_test" value="Add Radiology Test">
-    </form>
+            <input class="btn btn-primary" type="submit" name="add_radiology_test" value="Add Radiology Test">
+        </form>
 
-    <?php
-    if ($error_message) {
-        echo "<p>" . $error_message . "</p>";
-    }
-    ?>
+        <?php
+        if ($error_message) {
+            echo "<p>" . $error_message . "</p>";
+        }
+        ?>
+    </div>
+
+    <!-- Add Bootstrap JS (Popper.js and Bootstrap.js) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
