@@ -471,32 +471,32 @@ if (isset($_POST["generate_report_and_bill"])) {
             echo "<td></td>";
             echo "<td>Haemoglobin Level</td>";
             echo "<td>" . $report['BloodTest']['HaemoglobinLevel'] . "</td>";
-            echo "<td></td>"; // Reference Value
-            echo "<td></td>"; // Unit
+            echo "<td>13.0-17.0</td>"; // Reference Value
+            echo "<td>g/dL</td>"; // Unit
             echo "</tr>";
 
             echo "<tr>";
             echo "<td></td>";
             echo "<td>White Blood Cell (WBC) Count</td>";
             echo "<td>" . $report['BloodTest']['WBCount'] . "</td>";
-            echo "<td></td>"; // Reference Value
-            echo "<td></td>"; // Unit
+            echo "<td>4000-11000</td>"; // Reference Value
+            echo "<td>cumm</td>"; // Unit
             echo "</tr>";
 
             echo "<tr>";
             echo "<td></td>";
             echo "<td>Red Blood Cell (RBC) Count</td>";
             echo "<td>" . $report['BloodTest']['RBCCount'] . "</td>";
-            echo "<td></td>"; // Reference Value
-            echo "<td></td>"; // Unit
+            echo "<td>4.5-5.5</td>"; // Reference Value
+            echo "<td>mill/cumm</td>"; // Unit
             echo "</tr>";
 
             echo "<tr>";
             echo "<td></td>";
             echo "<td>Platelet Count</td>";
             echo "<td>" . $report['BloodTest']['PlateletCount'] . "</td>";
-            echo "<td></td>"; // Reference Value
-            echo "<td></td>"; // Unit
+            echo "<td>150000-410000</td>"; // Reference Value
+            echo "<td>cumm</td>"; // Unit
             echo "</tr>";
         }
 
