@@ -300,19 +300,32 @@ if (isset($_POST["delete_appointment"])) {
     }
 }
 
+// Function to delete test data based on the appointment ID
 function deleteTestData($appointmentID) {
     global $mysqli;
-    $testType = "bloodtest";  // Update this based on the test type
     
-    $deleteTestData = $mysqli->prepare("DELETE FROM $testType WHERE AppointmentID = ?");
-    $deleteTestData->bind_param("i", $appointmentID);
+    // Define an array of test tables
+    $testTables = ['bloodtest', 'urinetest', 'radiologytest'];
+    
+    $errorMessage = '';
 
-    if (!$deleteTestData->execute()) {
-        return "Error: " . $deleteTestData->error;
+    // Iterate through each test table and delete data
+    foreach ($testTables as $testType) {
+        $deleteTestData = $mysqli->prepare("DELETE FROM $testType WHERE AppointmentID = ?");
+        $deleteTestData->bind_param("i", $appointmentID);
+
+        if (!$deleteTestData->execute()) {
+            $errorMessage .= "Error deleting $testType data: " . $deleteTestData->error . "\n";
+        }
+    }
+
+    if (!empty($errorMessage)) {
+        return "Error: " . $errorMessage;
     }
 
     return "Test data for Appointment ID $appointmentID deleted successfully!";
 }
+
 
 
 // Function to delete an appointment by AppointmentID
