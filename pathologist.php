@@ -318,10 +318,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!-- Add the code for generating a report here -->
 <?php
-// Function to generate a report based on appointment ID
-function generateReport($selectedAppointmentID) {
+// Function to generate a report and bill based on appointment ID
+function generateReportAndBill($selectedAppointmentID) {
     global $mysqli;
     $report = array();
+    
+    // Fetch patient name
+    $sql = "SELECT patient.Name, patient.Address, patient.Contact
+    FROM patient
+    JOIN appointment ON patient.PatientID = appointment.PatientID
+    WHERE appointment.AppointmentID = ?";
+$stmt = $mysqli->prepare($sql);
+
+if (!$stmt) {
+    echo "Error: " . $mysqli->error;
+} else {
+    $stmt->bind_param("s", $selectedAppointmentID);
+    if ($stmt->execute()) {
+        $result = $stmt->get_result();
+        if ($result && $patientResult = $result->fetch_assoc()) {
+            $report['PatientInfo'] = $patientResult;
+        } else {
+            echo "No data found for the selected appointment ID.";
+        }
+        $stmt->close();
+}else {
+        echo "Error executing the query: " . $stmt->error;
+    }
+}
+
+//$report['PatientInfo'] = $patientResult;
 
     // Fetch blood test readings
     $sql = "SELECT * FROM bloodtest WHERE AppointmentID = ?";
@@ -354,29 +380,42 @@ function generateReport($selectedAppointmentID) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST["generate_report"])) {
+    if (isset($_POST["generate_report_and_bill"])) {
         $selectedAppointmentID = $_POST["selected_appointment_id"];
-        $report = generateReport($selectedAppointmentID);
+        $report = generateReportAndBill($selectedAppointmentID);
 
-        if (!empty($report['UrineTest']) || !empty($report['BloodTest']) || !empty($report['RadiologyTest'])) {
-            $error_message = "Report generated successfully.";
-        } else {
-            $error_message = "No data found for the selected appointment ID.";
+        // Define prices for the tests
+        $bloodTestPrice = 50;
+        $urineTestPrice = 40;
+        $radiologyTestPrice = 100;
+
+        // Calculate total bill
+        $totalBill = 0;
+        if (isset($report['BloodTest'])) {
+            $totalBill += $bloodTestPrice;
+        }
+        if (isset($report['UrineTest'])) {
+            $totalBill += $urineTestPrice;
+        }
+        if (isset($report['RadiologyTest'])) {
+            $totalBill += $radiologyTestPrice;
         }
     }
 }
 ?>
 <!-- ... (Your existing HTML code) -->
-<h2 class="mt-4">Generate Report</h2>
+
+<h2 class="mt-4">Generate Report and Bill</h2>
+
 <form method="post" action="">
     <div class="form-group">
-        <label for="selected_appointment_id">Select an Appointment ID for Report:</label>
+        <label for="selected_appointment_id">Select an Appointment ID for Report and Bill:</label>
         <select class="form-control" name="selected_appointment_id" id="selected_appointment_id">
             <?php
             $bloodTestAppointments = getAppointmentsByTestType('bloodtest');
             $urineTestAppointments = getAppointmentsByTestType('urinetest');
             $radiologyTestAppointments = getAppointmentsByTestType('radiologytest');
-            
+
             // Merge all appointment IDs into one array
             $allAppointments = array_merge($bloodTestAppointments, $urineTestAppointments, $radiologyTestAppointments);
 
@@ -387,68 +426,220 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </select>
     </div>
 
-    <input class="btn btn-primary" type="submit" name="generate_report" value="Generate Report">
+    <input class="btn btn-primary" type="submit" name="generate_report_and_bill" value="Generate Report and Bill">
 </form>
 
-
 <?php
-if ($error_message) {
-    echo "<p>" . $error_message . "</p>";
-}
+if (isset($_POST["generate_report_and_bill"])) {
+    $selectedAppointmentID = $_POST["selected_appointment_id"];
+    $report = generateReportAndBill($selectedAppointmentID);
 
-if (isset($report['BloodTest']) || isset($report['UrineTest']) || isset($report['RadiologyTest'])) {
-    echo "<h2 class='mt-4'>Report</h2>";
-    echo "<table class='table table-bordered'>";
-    echo "<thead>";
-    echo "<tr>";
-    echo "<th>Test Type</th>";
-    echo "<th>Result</th>";
-    echo "</tr>";
-    echo "</thead>";
-    echo "<tbody>";
-    
-    if (isset($report['BloodTest'])) {
+    if ($report) {
+        $bloodTestPrice = 250;
+        $urineTestPrice = 300;
+        $radiologyTestPrice = 500;
+
+        echo "<h2 class='mt-4'>Patient Information</h2>";
+        echo "<p><b>Name:</b> " . $report['PatientInfo']['Name'] . "</p>";
+        echo "<p><b>Address:</b> " . $report['PatientInfo']['Address'] . "</p>";
+        echo "<p><b>Contact Number:</b> " . $report['PatientInfo']['Contact'] . "</p>";
+
+        echo "<h2 class='mt-4'>Report</h2>";
+        echo "<div class='table-responsive'>";
+        echo "<table class='table table-bordered'>";
+        echo "<thead class='thead-dark'>";
         echo "<tr>";
-        echo "<td>Blood Test</td>";
-        echo "<td>";
-        echo "Blood Type: " . $report['BloodTest']['BloodType'] . "<br>";
-        echo "Haemoglobin Level: " . $report['BloodTest']['HaemoglobinLevel'] . "<br>";
-        echo "White Blood Cell (WBC) Count: " . $report['BloodTest']['WBCount'] . "<br>";
-        echo "Red Blood Cell (RBC) Count: " . $report['BloodTest']['RBCCount'] . "<br>";
-        echo "Platelet Count: " . $report['BloodTest']['PlateletCount'] . "<br>";
-        echo "</td>";
+        echo "<th>Test Type</th>";
+        echo "<th>Investigation</th>";
+        echo "<th>Result</th>";
+        echo "<th>Reference Value</th>";
+        echo "<th>Unit</th>";
         echo "</tr>";
-    }
-    
-    if (isset($report['UrineTest'])) {
+        echo "</thead>";
+        echo "<tbody>";
+
+        if (isset($report['BloodTest'])) {
+            echo "<tr>";
+            echo "<td>Blood Test</td>";
+            echo "<td>Blood Group</td>";
+            echo "<td>" . $report['BloodTest']['BloodType'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Haemoglobin Level</td>";
+            echo "<td>" . $report['BloodTest']['HaemoglobinLevel'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>White Blood Cell (WBC) Count</td>";
+            echo "<td>" . $report['BloodTest']['WBCount'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Red Blood Cell (RBC) Count</td>";
+            echo "<td>" . $report['BloodTest']['RBCCount'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Platelet Count</td>";
+            echo "<td>" . $report['BloodTest']['PlateletCount'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+        }
+
+        if (isset($report['UrineTest'])) {
+            echo "<tr>";
+            echo "<td>Urine Test</td>";
+            echo "<td>Urine Color</td>";
+            echo "<td>" . $report['UrineTest']['UrineColor'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Urine Appearance</td>";
+            echo "<td>" . $report['UrineTest']['UrineAppearance'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>pH Level</td>";
+            echo "<td>" . $report['UrineTest']['pHLevel'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Specific Gravity</td>";
+            echo "<td>" . $report['UrineTest']['SpecificGravity'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Protein Presence</td>";
+            echo "<td>" . $report['UrineTest']['ProteinPresence'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Glucose Level</td>";
+            echo "<td>" . $report['UrineTest']['GlucoseLevel'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Ketone Level</td>";
+            echo "<td>" . $report['UrineTest']['KetoneLevel'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+        }
+
+        if (isset($report['RadiologyTest'])) {
+            echo "<tr>";
+            echo "<td>Radiology Test</td>";
+            echo "<td>Scan Type</td>";
+            echo "<td>" . $report['RadiologyTest']['ScanType'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+
+            echo "<tr>";
+            echo "<td></td>";
+            echo "<td>Scan Date</td>";
+            echo "<td>" . $report['RadiologyTest']['ScanDate'] . "</td>";
+            echo "<td></td>"; // Reference Value
+            echo "<td></td>"; // Unit
+            echo "</tr>";
+        }
+
+        echo "</tbody>";
+        echo "</table>";
+        echo "</div>";
+
+        echo "<h2 class='mt-4'>Bill</h2>";
+        echo "<div class='table-responsive'>";
+        echo "<table class='table table-bordered'>";
         echo "<tr>";
-        echo "<td>Urine Test</td>";
-        echo "<td>";
-        echo "Urine Color: " . $report['UrineTest']['UrineColor'] . "<br>";
-        echo "Urine Appearance: " . $report['UrineTest']['UrineAppearance'] . "<br>";
-        echo "pH Level: " . $report['UrineTest']['pHLevel'] . "<br>";
-        echo "Specific Gravity: " . $report['UrineTest']['SpecificGravity'] . "<br>";
-        echo "Protein Presence: " . $report['UrineTest']['ProteinPresence'] . "<br>";
-        echo "Glucose Level: " . $report['UrineTest']['GlucoseLevel'] . "<br>";
-        echo "Ketone Level: " . $report['UrineTest']['KetoneLevel'] . "<br>";
-        echo "</td>";
+        echo "<td>Pathology Name:</td>";
+        echo "<td>Sym Pathology</td>";
         echo "</tr>";
-    }
-    
-    if (isset($report['RadiologyTest'])) {
         echo "<tr>";
-        echo "<td>Radiology Test</td>";
-        echo "<td>";
-        echo "Scan Type: " . $report['RadiologyTest']['ScanType'] . "<br>";
-        echo "Scan Date: " . $report['RadiologyTest']['ScanDate'] . "<br>";
-        echo "</td>";
+        echo "<td>Address:</td>";
+        echo "<td>10 Downing Street, London</td>";
         echo "</tr>";
+        echo "<tr>";
+        echo "<td>Contact:</td>";
+        echo "<td>9999988888</td>";
+        echo "</tr>";
+
+        $totalBill = 0;
+        if (isset($report['BloodTest'])) {
+            $totalBill += $bloodTestPrice;
+        } else {
+            echo "<tr>";
+            echo "<td>Blood Test:</td>";
+            echo "<td>X 0</td>";
+            echo "</tr>";
+        }
+        if (isset($report['UrineTest'])) {
+            $totalBill += $urineTestPrice;
+        } else {
+            echo "<tr>";
+            echo "<td>Urine Test:</td>";
+            echo "<td>X 0</td>";
+            echo "</tr>";
+        }
+        if (isset($report['RadiologyTest'])) {
+            $totalBill += $radiologyTestPrice;
+            echo "<tr>";
+            echo "<td>Radiology Test:</td>";
+            echo "<td>$radiologyTestPrice</td>";
+            echo "</tr>";
+        } else {
+            echo "<tr>";
+            echo "<td>Radiology Test:</td>";
+            echo "<td>X 0</td>";
+            echo "</tr>";
+        }
+
+        echo "<tr>";
+        echo "<td>Total Bill:</td>";
+        echo "<td>Rs." . $totalBill . "</td>";
+        echo "</tr>";
+        echo "</table>";
+        echo "</div>";
+    } else {
+        echo "No data found for the selected appointment ID.";
     }
-    
-    echo "</tbody>";
-    echo "</table>";
 }
 ?>
+
+
+
 
     <!-- Add Bootstrap JS (Popper.js and Bootstrap.js) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
