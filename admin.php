@@ -279,39 +279,67 @@ if (isset($_POST["edit_appointment"])) {
     }
 }
 
-// Function to delete a patient by ID, along with their appointments
-function deletePatient($patientID)
+// Function to delete a appointments
+if (isset($_POST["delete_appointment"])) {
+    $deleteAppointmentID = $_POST["delete_appointment_id"];
+    
+    // Delete test data first
+    $result = deleteTestData($deleteAppointmentID);
+
+    if (strpos($result, "Error:") === 0) {
+        echo '<script>alert("' . $result . '");</script>';
+    } else {
+        // If test data is deleted successfully, proceed to delete the appointment
+        $deleteResult = deleteAppointment($deleteAppointmentID);
+
+        if (strpos($deleteResult, "Error:") === 0) {
+            echo '<script>alert("' . $deleteResult . '");</script>';
+        } else {
+            echo '<script>alert("Success");</script>';
+        }
+    }
+}
+
+function deleteTestData($appointmentID) {
+    global $mysqli;
+    $testType = "bloodtest";  // Update this based on the test type
+    
+    $deleteTestData = $mysqli->prepare("DELETE FROM $testType WHERE AppointmentID = ?");
+    $deleteTestData->bind_param("i", $appointmentID);
+
+    if (!$deleteTestData->execute()) {
+        return "Error: " . $deleteTestData->error;
+    }
+
+    return "Test data for Appointment ID $appointmentID deleted successfully!";
+}
+
+
+// Function to delete an appointment by AppointmentID
+function deleteAppointment($appointmentID)
 {
     global $mysqli;
 
-    // Check if the patient exists
-    $stmt = $mysqli->prepare("SELECT PatientID FROM patient WHERE PatientID = ?");
-    $stmt->bind_param("i", $patientID);
+    // Check if the appointment exists
+    $stmt = $mysqli->prepare("SELECT AppointmentID FROM appointment WHERE AppointmentID = ?");
+    $stmt->bind_param("i", $appointmentID);
     $stmt->execute();
     $stmt->store_result();
 
     if ($stmt->num_rows === 0) {
-        return "Error: Patient with ID $patientID does not exist.";
+        return "Error: Appointment with ID $appointmentID does not exist.";
     }
 
-    // Delete the patient's appointments first
-    $deleteAppointments = $mysqli->prepare("DELETE FROM appointment WHERE PatientID = ?");
-    $deleteAppointments->bind_param("i", $patientID);
-    if (!$deleteAppointments->execute()) {
-        return "Error: " . $deleteAppointments->error;
+    // Delete the appointment
+    $deleteAppointment = $mysqli->prepare("DELETE FROM appointment WHERE AppointmentID = ?");
+    $deleteAppointment->bind_param("i", $appointmentID);
+    if (!$deleteAppointment->execute()) {
+        return "Error: " . $deleteAppointment->error;
     }
 
-    // Now delete the patient
-    $stmt = $mysqli->prepare("DELETE FROM patient WHERE PatientID = ?");
-    $stmt->bind_param("i", $patientID);
-
-    if ($stmt->execute()) {
-        return "Patient with ID $patientID and associated appointments deleted successfully!";
-    } else {
-        return "Error: " . $stmt->error;
-    }
-    $stmt->close();
+    return "Appointment with ID $appointmentID deleted successfully!";
 }
+
 
 
 if (isset($_POST["delete_patient"])) {
@@ -538,20 +566,22 @@ if (isset($_POST["delete_patient"])) {
             <button type="submit" name="edit_appointment" class="btn btn-primary">Edit Appointment</button>
         </form>
         <hr>
-        <h2>Delete Patient</h2>
-        <form method="post">
-            <div class="form-group">
-                <select name="delete_patient_id" class="form-control" required>
-                    <?php
-                    $result = $mysqli->query("SELECT PatientID, Name FROM patient");
-                    while ($row = $result->fetch_assoc()) {
-                        echo "<option value='" . $row['PatientID'] . "'>" . $row['PatientID'] . " - " . $row['Name'] . "</option>";
-                    }
-                    ?>
-                </select>
-            </div>
-            <button type="submit" name="delete_patient" class="btn btn-danger">Delete Patient</button>
-        </form>
+        <h2>Delete Appointment</h2>
+<form method="post">
+    <div class="form-group">
+        <select name="delete_appointment_id" class="form-control" required>
+            <?php
+            // Fetch the list of appointments
+            $result = $mysqli->query("SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name FROM appointment INNER JOIN patient ON appointment.PatientID = patient.PatientID");
+            while ($row = $result->fetch_assoc()) {
+                echo "<option value='" . $row['AppointmentID'] . "'>" . "Appointment ID: " . $row['AppointmentID'] . " - Patient Name: " . $row['Name'] . " - Date: " . $row['AppointmentDate'] . " - Time: " . $row['AppointmentTime'] . "</option>";
+            }
+            ?>
+        </select>
+    </div>
+    <button type="submit" name="delete_appointment" class="btn btn-danger">Delete Appointment</button>
+</form>
+
         <hr>
         <h2>Search</h2>
         <form method="post">
