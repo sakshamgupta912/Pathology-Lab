@@ -314,6 +314,141 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         ?>
     </div>
+        <!-- ... (Your existing code) -->
+
+<!-- Add the code for generating a report here -->
+<?php
+// Function to generate a report based on appointment ID
+function generateReport($selectedAppointmentID) {
+    global $mysqli;
+    $report = array();
+
+    // Fetch blood test readings
+    $sql = "SELECT * FROM bloodtest WHERE AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $selectedAppointmentID);
+    $stmt->execute();
+    $bloodTestResult = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $report['BloodTest'] = $bloodTestResult;
+
+    // Fetch urine test readings
+    $sql = "SELECT * FROM urinetest WHERE AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $selectedAppointmentID);
+    $stmt->execute();
+    $urineTestResult = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $report['UrineTest'] = $urineTestResult;
+
+    // Fetch radiology test details
+    $sql = "SELECT * FROM radiologytest WHERE AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $selectedAppointmentID);
+    $stmt->execute();
+    $radiologyTestResult = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $report['RadiologyTest'] = $radiologyTestResult;
+
+    return $report;
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST["generate_report"])) {
+        $selectedAppointmentID = $_POST["selected_appointment_id"];
+        $report = generateReport($selectedAppointmentID);
+
+        if (!empty($report['UrineTest']) || !empty($report['BloodTest']) || !empty($report['RadiologyTest'])) {
+            $error_message = "Report generated successfully.";
+        } else {
+            $error_message = "No data found for the selected appointment ID.";
+        }
+    }
+}
+?>
+<!-- ... (Your existing HTML code) -->
+<h2 class="mt-4">Generate Report</h2>
+<form method="post" action="">
+    <div class="form-group">
+        <label for="selected_appointment_id">Select an Appointment ID for Report:</label>
+        <select class="form-control" name="selected_appointment_id" id="selected_appointment_id">
+            <?php
+            $bloodTestAppointments = getAppointmentsByTestType('bloodtest');
+            $urineTestAppointments = getAppointmentsByTestType('urinetest');
+            $radiologyTestAppointments = getAppointmentsByTestType('radiologytest');
+            
+            // Merge all appointment IDs into one array
+            $allAppointments = array_merge($bloodTestAppointments, $urineTestAppointments, $radiologyTestAppointments);
+
+            foreach ($allAppointments as $appointment) {
+                echo "<option value='" . $appointment['AppointmentID'] . "'>" . $appointment['Name'] . " (ID: " . $appointment['AppointmentID'] . ")</option>";
+            }
+            ?>
+        </select>
+    </div>
+
+    <input class="btn btn-primary" type="submit" name="generate_report" value="Generate Report">
+</form>
+
+
+<?php
+if ($error_message) {
+    echo "<p>" . $error_message . "</p>";
+}
+
+if (isset($report['BloodTest']) || isset($report['UrineTest']) || isset($report['RadiologyTest'])) {
+    echo "<h2 class='mt-4'>Report</h2>";
+    echo "<table class='table table-bordered'>";
+    echo "<thead>";
+    echo "<tr>";
+    echo "<th>Test Type</th>";
+    echo "<th>Result</th>";
+    echo "</tr>";
+    echo "</thead>";
+    echo "<tbody>";
+    
+    if (isset($report['BloodTest'])) {
+        echo "<tr>";
+        echo "<td>Blood Test</td>";
+        echo "<td>";
+        echo "Blood Type: " . $report['BloodTest']['BloodType'] . "<br>";
+        echo "Haemoglobin Level: " . $report['BloodTest']['HaemoglobinLevel'] . "<br>";
+        echo "White Blood Cell (WBC) Count: " . $report['BloodTest']['WBCount'] . "<br>";
+        echo "Red Blood Cell (RBC) Count: " . $report['BloodTest']['RBCCount'] . "<br>";
+        echo "Platelet Count: " . $report['BloodTest']['PlateletCount'] . "<br>";
+        echo "</td>";
+        echo "</tr>";
+    }
+    
+    if (isset($report['UrineTest'])) {
+        echo "<tr>";
+        echo "<td>Urine Test</td>";
+        echo "<td>";
+        echo "Urine Color: " . $report['UrineTest']['UrineColor'] . "<br>";
+        echo "Urine Appearance: " . $report['UrineTest']['UrineAppearance'] . "<br>";
+        echo "pH Level: " . $report['UrineTest']['pHLevel'] . "<br>";
+        echo "Specific Gravity: " . $report['UrineTest']['SpecificGravity'] . "<br>";
+        echo "Protein Presence: " . $report['UrineTest']['ProteinPresence'] . "<br>";
+        echo "Glucose Level: " . $report['UrineTest']['GlucoseLevel'] . "<br>";
+        echo "Ketone Level: " . $report['UrineTest']['KetoneLevel'] . "<br>";
+        echo "</td>";
+        echo "</tr>";
+    }
+    
+    if (isset($report['RadiologyTest'])) {
+        echo "<tr>";
+        echo "<td>Radiology Test</td>";
+        echo "<td>";
+        echo "Scan Type: " . $report['RadiologyTest']['ScanType'] . "<br>";
+        echo "Scan Date: " . $report['RadiologyTest']['ScanDate'] . "<br>";
+        echo "</td>";
+        echo "</tr>";
+    }
+    
+    echo "</tbody>";
+    echo "</table>";
+}
+?>
 
     <!-- Add Bootstrap JS (Popper.js and Bootstrap.js) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
