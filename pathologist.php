@@ -318,13 +318,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!-- Add the code for generating a report here -->
 <?php
+function calculateAgeFromDOB($dob) {
+    // Convert DOB to a DateTime object
+    $dobDate = new DateTime($dob);
+
+    // Get the current date
+    $currentDate = new DateTime();
+
+    // Calculate the interval (difference) between DOB and current date
+    $ageInterval = $currentDate->diff($dobDate);
+
+    // Extract the years from the interval
+    $age = $ageInterval->y;
+
+    return $age;
+}
+?>
+<?php
 // Function to generate a report and bill based on appointment ID
 function generateReportAndBill($selectedAppointmentID) {
     global $mysqli;
     $report = array();
     
     // Fetch patient name
-    $sql = "SELECT patient.Name, patient.Address, patient.Contact
+    $sql = "SELECT patient.Name, patient.Address, patient.Contact,patient.Gender,patient.DOB 
     FROM patient
     JOIN appointment ON patient.PatientID = appointment.PatientID
     WHERE appointment.AppointmentID = ?";
@@ -441,6 +458,14 @@ if (isset($_POST["generate_report_and_bill"])) {
 
         echo "<h2 class='mt-4'>Patient Information</h2>";
         echo "<p><b>Name:</b> " . $report['PatientInfo']['Name'] . "</p>";
+        echo "<p><b>Gender:</b> " . $report['PatientInfo']['Gender'] . "</p>";
+        echo "<p><b>DOB:</b> " . $report['PatientInfo']['DOB'] . "</p>";
+        if (isset($report['PatientInfo']['DOB'])) {
+            $age = calculateAgeFromDOB($report['PatientInfo']['DOB']);
+            echo "<p><b>Age:</b> " . $age . " years</p>";
+        } else {
+            echo "<p><b>Age:</b> N/A</p>";
+        }
         echo "<p><b>Address:</b> " . $report['PatientInfo']['Address'] . "</p>";
         echo "<p><b>Contact Number:</b> " . $report['PatientInfo']['Contact'] . "</p>";
 
