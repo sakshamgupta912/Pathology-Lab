@@ -16,6 +16,20 @@ if ($_SESSION['role'] !== 'admin') {
 // The rest of your "admin.php" code here
 // Only users with the "admin" role can access this content
 ?>
+<?php
+if (isset($_POST["logout"])) {
+    // Unset all session variables
+    session_unset();
+
+    // Destroy the session
+    session_destroy();
+
+    // Redirect the user to the login page
+    header("Location: index.php");
+    exit();
+}
+
+?>
 
 <?php
 require 'connection.php';
@@ -52,11 +66,11 @@ function makeAppointment($patientID, $appointmentDate, $appointmentTime, $testTy
 
     $stmt = $mysqli->prepare("INSERT INTO appointment (PatientID, AppointmentDate, AppointmentTime) VALUES (?, ?, ?)");
     $stmt->bind_param("iss", $patientID, $appointmentDate, $appointmentTime);
-    
+
     if ($stmt->execute()) {
         // Get the auto-incremented AppointmentID
         $appointment_id = $mysqli->insert_id;
-    
+
         $testType_query = "INSERT INTO $testType (AppointmentID) VALUES ('$appointment_id')";
         if ($mysqli->query($testType_query) === TRUE) {
             // echo '<script>alert("Data inserted successfully.");</script>';
@@ -67,7 +81,7 @@ function makeAppointment($patientID, $appointmentDate, $appointmentTime, $testTy
     } else {
         return "Error: " . $stmt->error;
     }
-    
+
     $stmt->close();
 }
 
@@ -131,8 +145,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             echo '<script>alert("Success");</script>';
         }
-
-
     }
 }
 
@@ -282,7 +294,7 @@ if (isset($_POST["edit_appointment"])) {
 // Function to delete a appointments
 if (isset($_POST["delete_appointment"])) {
     $deleteAppointmentID = $_POST["delete_appointment_id"];
-    
+
     // Delete test data first
     $result = deleteTestData($deleteAppointmentID);
 
@@ -301,12 +313,13 @@ if (isset($_POST["delete_appointment"])) {
 }
 
 // Function to delete test data based on the appointment ID
-function deleteTestData($appointmentID) {
+function deleteTestData($appointmentID)
+{
     global $mysqli;
-    
+
     // Define an array of test tables
     $testTables = ['bloodtest', 'urinetest', 'radiologytest'];
-    
+
     $errorMessage = '';
 
     // Iterate through each test table and delete data
@@ -381,6 +394,25 @@ if (isset($_POST["delete_patient"])) {
 </head>
 
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Admin</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+     
+               
+            </ul>
+            
+            <form class="form-inline my-2 my-lg-0 " method="post">
+              
+              <button  type="submit" name="logout" class="btn btn-danger my-2 my-sm-0" type="submit">Logout</button>
+              
+          </form>
+        </div>
+    </nav>
     <div class="container ">
         <h1 style='text-align:center'>Admin Dashboard</h1>
         <h2>Appointments for a Date</h2>
@@ -445,7 +477,7 @@ if (isset($_POST["delete_patient"])) {
             </div>
             <label for="gender">DOB</label>
             <div class="form-group">
-                <input type="date" name="dob"  placeholder="dob" class="form-control" required>
+                <input type="date" name="dob" placeholder="dob" class="form-control" required>
             </div>
             <div class="form-group">
                 <label for="gender">Gender:</label>
@@ -581,20 +613,20 @@ if (isset($_POST["delete_patient"])) {
         </form>
         <hr>
         <h2>Delete Appointment</h2>
-<form method="post">
-    <div class="form-group">
-        <select name="delete_appointment_id" class="form-control" required>
-            <?php
-            // Fetch the list of appointments
-            $result = $mysqli->query("SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name FROM appointment INNER JOIN patient ON appointment.PatientID = patient.PatientID");
-            while ($row = $result->fetch_assoc()) {
-                echo "<option value='" . $row['AppointmentID'] . "'>" . "Appointment ID: " . $row['AppointmentID'] . " - Patient Name: " . $row['Name'] . " - Date: " . $row['AppointmentDate'] . " - Time: " . $row['AppointmentTime'] . "</option>";
-            }
-            ?>
-        </select>
-    </div>
-    <button type="submit" name="delete_appointment" class="btn btn-danger">Delete Appointment</button>
-</form>
+        <form method="post">
+            <div class="form-group">
+                <select name="delete_appointment_id" class="form-control" required>
+                    <?php
+                    // Fetch the list of appointments
+                    $result = $mysqli->query("SELECT appointment.AppointmentID, appointment.PatientID, appointment.AppointmentDate, appointment.AppointmentTime, patient.Name FROM appointment INNER JOIN patient ON appointment.PatientID = patient.PatientID");
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<option value='" . $row['AppointmentID'] . "'>" . "Appointment ID: " . $row['AppointmentID'] . " - Patient Name: " . $row['Name'] . " - Date: " . $row['AppointmentDate'] . " - Time: " . $row['AppointmentTime'] . "</option>";
+                    }
+                    ?>
+                </select>
+            </div>
+            <button type="submit" name="delete_appointment" class="btn btn-danger">Delete Appointment</button>
+        </form>
 
         <hr>
         <h2>Search</h2>

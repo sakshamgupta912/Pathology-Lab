@@ -111,6 +111,20 @@ if ($_SESSION['role'] !== 'pathologist') {
 // The rest of your "pathologist.php" code here
 // Only users with the "pathologist" role can access this content
 ?>
+<?php
+if (isset($_POST["logout"])) {
+    // Unset all session variables
+    session_unset();
+
+    // Destroy the session
+    session_destroy();
+
+    // Redirect the user to the login page
+    header("Location: index.php");
+    exit();
+}
+
+?>
 
 <?php
 require 'connection.php';
@@ -480,8 +494,27 @@ function calculateTestPrice($age, $testType)
 </head>
 
 <body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Pathologist</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+     
+               
+            </ul>
+            
+            <form class="form-inline my-2 my-lg-0 " method="post">
+              
+              <button  type="submit" name="logout" class="btn btn-danger my-2 my-sm-0" type="submit">Logout</button>
+              
+          </form>
+        </div>
+    </nav>
     <div class="container">
-        <h1 class="mt-5">Pathologist Dashboard</h1>
+        
 
         <h2 class="mt-4">Add Blood Test Readings</h2>
         <form method="post" action="">
