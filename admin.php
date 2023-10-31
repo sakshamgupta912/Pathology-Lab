@@ -443,8 +443,9 @@ if (isset($_POST["delete_patient"])) {
             <div class="form-group">
                 <input type="email" name="email" placeholder="Email" class="form-control" required>
             </div>
+            <label for="gender">DOB</label>
             <div class="form-group">
-                <input type="date" name="dob" class="form-control" required>
+                <input type="date" name="dob"  placeholder="dob" class="form-control" required>
             </div>
             <div class="form-group">
                 <label for="gender">Gender:</label>

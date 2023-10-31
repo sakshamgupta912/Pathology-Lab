@@ -439,8 +439,8 @@ function calculateTestPrice($age, $testType)
 
     $host = "localhost"; // Hostname
     $username = "root"; // MySQL username
-    $password = "sys@123"; // MySQL password
-    $database = "pathologylab_final"; // Database name
+    $password = ""; // MySQL password
+    $database = "pathologylab"; // Database name
 
     try {
         $dsn = "mysql:host=$host;dbname=$database";
@@ -573,7 +573,7 @@ function calculateTestPrice($age, $testType)
             <input class="btn btn-primary" type="submit" name="add_urine_readings" value="Add Urine Test Readings">
         </form>
 
-        <h2 class="mt-4">Add Radiology Test</h2>
+        <h2 class="mt-4">Add Radiology Test Readings</h2>
         <form method="post" action="">
             <div class="form-group">
                 <label for="appointment_id_radiology">Select an Appointment for Radiology Test:</label>
@@ -595,8 +595,9 @@ function calculateTestPrice($age, $testType)
                 </div>
                 <div class="form-group">
                     <label for="scan_date">Scan Date:</label>
-                    <input class="form-control" type="text" name="scan_date" id="scan_date">
+                    <input class="form-control" type="date" name="scan_date" id="scan_date">
                 </div>
+
             </div>
 
             <input class="btn btn-primary" type="submit" name="add_radiology_test" value="Add Radiology Test">
