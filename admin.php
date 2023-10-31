@@ -414,7 +414,6 @@ if (isset($_POST["delete_patient"])) {
         </div>
     </nav>
     <div class="container ">
-        <h1 style='text-align:center'>Admin Dashboard</h1>
         <h2>Appointments for a Date</h2>
         <form method="post">
             <input type="date" name="selected_date" required>
