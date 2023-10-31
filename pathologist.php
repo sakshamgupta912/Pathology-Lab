@@ -1,4 +1,96 @@
 <?php
+
+require('PHPMailer-master/src/PHPMailer.php');
+require('PHPMailer-master/src/Exception.php');
+require('PHPMailer-master/src/SMTP.php');
+require('fpdf/fpdf.php');
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+
+
+$mail = new PHPMailer();
+$mail->isSMTP();
+$mail->Host = 'smtp.gmail.com';
+$mail->SMTPAuth = true;
+$mail->Username = 'sakshamdev3@gmail.com';
+$mail->Password = 'skhiiyshmgxeqyvy';
+$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+$mail->Port = 587;
+
+
+
+// Function to send an email with the report and bill
+function sendEmailWithReport($email, $report, $totalBill)
+{
+    $message = "Dear " . $report['PatientInfo']['Name'] . ",\n\n";
+    $message .= "Here is your pathology report and bill:\n\n";
+
+    // Include the report and bill details in the email message
+    $message .= "Patient Information:\n";
+    $message .= "Name: " . $report['PatientInfo']['Name'] . "\n";
+    $message .= "Gender: " . $report['PatientInfo']['Gender'] . "\n";
+    $message .= "DOB: " . $report['PatientInfo']['DOB'] . "\n";
+
+    // Include test results in the email
+    if (isset($report['BloodTest'])) {
+        $message .= "\nBlood Test:\n";
+        $message .= "Blood Type: " . $report['BloodTest']['BloodType'] . "\n";
+        $message .= "Haemoglobin Level: " . $report['BloodTest']['HaemoglobinLevel'] . "\n";
+        $message .= "White Blood Cell (WBC) Count: " . $report['BloodTest']['WBCount'] . "\n";
+        $message .= "Red Blood Cell (RBC) Count: " . $report['BloodTest']['RBCCount'] . "\n";
+        $message .= "Platelet Count: " . $report['BloodTest']['PlateletCount'] . "\n";
+    }
+
+    if (isset($report['UrineTest'])) {
+        $message .= "\nUrine Test:\n";
+        $message .= "Urine Color: " . $report['UrineTest']['UrineColor'] . "\n";
+        $message .= "Urine Appearance: " . $report['UrineTest']['UrineAppearance'] . "\n";
+        $message .= "pH Level: " . $report['UrineTest']['pHLevel'] . "\n";
+        $message .= "Specific Gravity: " . $report['UrineTest']['SpecificGravity'] . "\n";
+        $message .= "Protein Presence: " . $report['UrineTest']['ProteinPresence'] . "\n";
+        $message .= "Glucose Level: " . $report['UrineTest']['GlucoseLevel'] . "\n";
+        $message .= "Ketone Level: " . $report['UrineTest']['KetoneLevel'] . "\n";
+    }
+
+    if (isset($report['RadiologyTest'])) {
+        $message .= "\nRadiology Test:\n";
+        $message .= "Scan Type: " . $report['RadiologyTest']['ScanType'] . "\n";
+        $message .= "Scan Date: " . $report['RadiologyTest']['ScanDate'] . "\n";
+    }
+    // Include the total bill in the email
+    $message .= "\nTotal Bill: Rs." . $totalBill . "\n";
+
+    $subject = "Pathology Report and Bill";
+
+    // Create a PHPMailer instance and send the email
+    $mail = new PHPMailer();
+    $mail->isSMTP();
+    $mail->Host = 'smtp.gmail.com';
+    $mail->SMTPAuth = true;
+    $mail->Username = 'sakshamdev3@gmail.com';
+    $mail->Password = 'skhiiyshmgxeqyvy';
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Port = 587;
+    $mail->setFrom('sakshamdev3@gmail.com', 'Your Name');
+    $mail->addAddress($email, $report['PatientInfo']['Name']); // Use the patient's email address
+
+    $mail->isHTML(false);
+    $mail->Subject = $subject;
+    $mail->Body = $message;
+
+    if ($mail->send()) {
+        return "Email sent successfully!";
+    } else {
+        return "Email could not be sent. Mailer Error: " . $mail->ErrorInfo;
+    }
+}
+
+?>
+
+<?php
 session_start();
 
 // Check if the user is logged in
@@ -349,10 +441,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $report = array();
 
             // Fetch patient name
-            $sql = "SELECT patient.Name, patient.Address, patient.Contact,patient.Gender,patient.DOB 
-    FROM patient
-    JOIN appointment ON patient.PatientID = appointment.PatientID
-    WHERE appointment.AppointmentID = ?";
+            // Fetch patient information, including the email address
+            $sql = "SELECT patient.PatientID, patient.Name, patient.Address, patient.Contact, patient.Gender, patient.DOB, patient.Email
+            FROM patient
+            JOIN appointment ON patient.PatientID = appointment.PatientID
+            WHERE appointment.AppointmentID = ?";
             $stmt = $mysqli->prepare($sql);
 
             if (!$stmt) {
@@ -425,6 +518,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if (isset($report['RadiologyTest'])) {
                     $totalBill += $radiologyTestPrice;
                 }
+
+                // $email = $report['PatientInfo']['Email'];  // Get the patient's email from the report data
+                // $emailResult = sendEmailWithReport($email, $report, $totalBill);
+
+                // echo $emailResult;
+            }
+            if (isset($_POST["generate_report_and_bill_and_mail"])) {
+                $selectedAppointmentID = $_POST["selected_appointment_id"];
+                $report = generateReportAndBill($selectedAppointmentID);
+
+                // Define prices for the tests
+                $bloodTestPrice = 50;
+                $urineTestPrice = 40;
+                $radiologyTestPrice = 100;
+
+                // Calculate total bill
+                $totalBill = 0;
+                if (isset($report['BloodTest'])) {
+                    $totalBill += $bloodTestPrice;
+                }
+                if (isset($report['UrineTest'])) {
+                    $totalBill += $urineTestPrice;
+                }
+                if (isset($report['RadiologyTest'])) {
+                    $totalBill += $radiologyTestPrice;
+                }
+
+                $email = $report['PatientInfo']['Email'];  // Get the patient's email from the report data
+                $emailResult = sendEmailWithReport($email, $report, $totalBill);
+
+                echo $emailResult;
             }
         }
         ?>
@@ -452,7 +576,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
 
             <input class="btn btn-primary" type="submit" name="generate_report_and_bill" value="Generate Report and Bill">
+            <input class="btn btn-primary" type="submit" name="generate_report_and_bill_and_mail" value="Send mail">
         </form>
+        
 
         <?php
         if (isset($_POST["generate_report_and_bill"])) {
@@ -668,6 +794,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 echo "No data found for the selected appointment ID.";
             }
+        }
+        ?>
+        <?php
+        if (isset($_POST["generate_report_and_bill_and_mail"])) {
+            $selectedAppointmentID = $_POST["selected_appointment_id"];
+            $report = generateReportAndBill($selectedAppointmentID);
+                
         }
         ?>
     </div> <!-- container -->
