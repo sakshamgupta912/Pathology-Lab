@@ -1,7 +1,7 @@
 <?php
 $host = "localhost"; // Hostname
 $username = "root"; // MySQL username
-$password = "sys@123"; // MySQL password
+$password = ""; // MySQL password
 $database = "pathologylab_final"; // Database name
 
 // Create a connection to the database
@@ -11,4 +11,7 @@ $mysqli = new mysqli($host, $username, $password, $database);
 if ($mysqli->connect_error) {
     die("Connection failed: " . $mysqli->connect_error);
 }
+
+
+
 ?>

@@ -83,8 +83,10 @@ function sendEmailWithReport($email, $report, $totalBill)
     $mail->Body = $message;
 
     if ($mail->send()) {
-        return "Email sent successfully!";
+        echo "<script>alert('Email sent successfully! ');</script>";
+        return "";
     } else {
+        echo "<script>alert('Email could not be sent. Error: " . $mail->ErrorInfo . "');</script>";
         return "Email could not be sent. Mailer Error: " . $mail->ErrorInfo;
     }
 }
