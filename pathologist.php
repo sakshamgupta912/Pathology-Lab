@@ -24,7 +24,8 @@ $mail->Port = 587;
 
 // Function to send an email with the report and bill
 function sendEmailWithReport($email, $report, $totalBill)
-{
+{   $patientAge = calculateAgeFromDOB($report['PatientInfo']['DOB']);
+        
     $message = "Dear " . $report['PatientInfo']['Name'] . ",\n\n";
     $message .= "Here is your pathology report and bill:\n\n";
 
@@ -33,7 +34,7 @@ function sendEmailWithReport($email, $report, $totalBill)
     $message .= "Name: " . $report['PatientInfo']['Name'] . "\n";
     $message .= "Gender: " . $report['PatientInfo']['Gender'] . "\n";
     $message .= "DOB: " . $report['PatientInfo']['DOB'] . "\n";
-
+    $message .= "Age: " . $patientAge . "\n";
     // Include test results in the email
     if (isset($report['BloodTest'])) {
         $message .= "\nBlood Test:\n";
@@ -273,6 +274,199 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 
 ?>
+<!-- Add the code for generating a report here -->
+<?php
+function calculateAgeFromDOB($dob)
+{
+    // Convert DOB to a DateTime object
+    $dobDate = new DateTime($dob);
+
+    // Get the current date
+    $currentDate = new DateTime();
+
+    // Calculate the interval (difference) between DOB and current date
+    $ageInterval = $currentDate->diff($dobDate);
+
+    // Extract the years from the interval
+    $age = $ageInterval->y;
+
+    return $age;
+}
+?>
+<?php
+// Function to generate a report and bill based on appointment ID
+function generateReportAndBill($selectedAppointmentID)
+{
+    global $mysqli;
+    $report = array();
+
+    // Fetch patient name
+    // Fetch patient information, including the email address
+    $sql = "SELECT patient.PatientID, patient.Name, patient.Address, patient.Contact, patient.Gender, patient.DOB, patient.Email
+            FROM patient
+            JOIN appointment ON patient.PatientID = appointment.PatientID
+            WHERE appointment.AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+
+    if (!$stmt) {
+        echo "Error: " . $mysqli->error;
+    } else {
+        $stmt->bind_param("s", $selectedAppointmentID);
+        if ($stmt->execute()) {
+            $result = $stmt->get_result();
+            if ($result && $patientResult = $result->fetch_assoc()) {
+                $report['PatientInfo'] = $patientResult;
+            } else {
+                echo "No data found for the selected appointment ID.";
+            }
+            $stmt->close();
+        } else {
+            echo "Error executing the query: " . $stmt->error;
+        }
+    }
+
+    //$report['PatientInfo'] = $patientResult;
+
+    // Fetch blood test readings
+    $sql = "SELECT * FROM bloodtest WHERE AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $selectedAppointmentID);
+    $stmt->execute();
+    $bloodTestResult = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $report['BloodTest'] = $bloodTestResult;
+
+    // Fetch urine test readings
+    $sql = "SELECT * FROM urinetest WHERE AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $selectedAppointmentID);
+    $stmt->execute();
+    $urineTestResult = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $report['UrineTest'] = $urineTestResult;
+
+    // Fetch radiology test details
+    $sql = "SELECT * FROM radiologytest WHERE AppointmentID = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $selectedAppointmentID);
+    $stmt->execute();
+    $radiologyTestResult = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $report['RadiologyTest'] = $radiologyTestResult;
+
+    return $report;
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST["generate_report_and_bill"])) {
+        $selectedAppointmentID = $_POST["selected_appointment_id"];
+        $report = generateReportAndBill($selectedAppointmentID);
+        $patientAge = calculateAgeFromDOB($report['PatientInfo']['DOB']);
+        // Define prices for the tests
+        $bloodTestPrice = calculateTestPrice($patientAge, 'bloodtest');
+                
+        
+        // Calculate Urine Test Price
+        $urineTestPrice = calculateTestPrice($patientAge, 'urinetest');
+        
+
+        // Calculate Radiology Test Price
+        $radiologyTestPrice = calculateTestPrice($patientAge, 'radiologytest');
+        
+        // Calculate total bill
+        $totalBill = 0;
+        if (isset($report['BloodTest'])) {
+            $totalBill += $bloodTestPrice;
+        }
+        if (isset($report['UrineTest'])) {
+            $totalBill += $urineTestPrice;
+        }
+        if (isset($report['RadiologyTest'])) {
+            $totalBill += $radiologyTestPrice;
+        }
+
+        // $email = $report['PatientInfo']['Email'];  // Get the patient's email from the report data
+        // $emailResult = sendEmailWithReport($email, $report, $totalBill);
+
+        // echo $emailResult;
+    }
+    if (isset($_POST["generate_report_and_bill_and_mail"])) {
+        $selectedAppointmentID = $_POST["selected_appointment_id"];
+        $report = generateReportAndBill($selectedAppointmentID);
+        $patientAge = calculateAgeFromDOB($report['PatientInfo']['DOB']);
+        // Define prices for the tests
+         $bloodTestPrice = calculateTestPrice($patientAge, 'bloodtest');
+                
+        
+                // Calculate Urine Test Price
+                $urineTestPrice = calculateTestPrice($patientAge, 'urinetest');
+                
+        
+                // Calculate Radiology Test Price
+                $radiologyTestPrice = calculateTestPrice($patientAge, 'radiologytest');
+                
+
+        // Calculate total bill
+        $totalBill = 0;
+        if (isset($report['BloodTest'])) {
+            $totalBill += $bloodTestPrice;
+        }
+        if (isset($report['UrineTest'])) {
+            $totalBill += $urineTestPrice;
+        }
+        if (isset($report['RadiologyTest'])) {
+            $totalBill += $radiologyTestPrice;
+        }
+
+        $email = $report['PatientInfo']['Email'];  // Get the patient's email from the report data
+        $emailResult = sendEmailWithReport($email, $report, $totalBill);
+
+        echo $emailResult;
+    }
+}
+
+function calculateTestPrice($age, $testType)
+{
+    // Connect to your database (you should have a database connection established)
+
+    // Define variables for procedure input and output
+
+    $patientAge = $age;
+    $testType = $testType;
+    $testPrice = 0.00;  // Default value
+
+    $host = "localhost"; // Hostname
+    $username = "root"; // MySQL username
+    $password = "sys@123"; // MySQL password
+    $database = "pathologylab_final"; // Database name
+
+    try {
+        $dsn = "mysql:host=$host;dbname=$database";
+        $pdo = new PDO($dsn, $username, $password);
+
+        // Set PDO to throw exceptions on error
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    } catch (PDOException $e) {
+        die("Connection failed: " . $e->getMessage());
+    }
+
+    // Prepare and execute the procedure call
+    $query = "CALL CalculateTestPrice(:patient_age, :test_type, @test_price)";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':patient_age', $patientAge, PDO::PARAM_INT);
+    $stmt->bindParam(':test_type', $testType, PDO::PARAM_STR);
+    $stmt->execute();
+
+    // Fetch the result from the stored procedure
+    $stmt = $pdo->query("SELECT @test_price");
+    $testPrice = $stmt->fetchColumn();
+
+    // Close the database connection (if necessary)
+
+    return $testPrice;
+}
+
+?>
 
 <!DOCTYPE html>
 <html>
@@ -412,147 +606,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         ?>
 
-        <!-- ... (Your existing code) -->
 
-        <!-- Add the code for generating a report here -->
-        <?php
-        function calculateAgeFromDOB($dob)
-        {
-            // Convert DOB to a DateTime object
-            $dobDate = new DateTime($dob);
 
-            // Get the current date
-            $currentDate = new DateTime();
 
-            // Calculate the interval (difference) between DOB and current date
-            $ageInterval = $currentDate->diff($dobDate);
-
-            // Extract the years from the interval
-            $age = $ageInterval->y;
-
-            return $age;
-        }
-        ?>
-        <?php
-        // Function to generate a report and bill based on appointment ID
-        function generateReportAndBill($selectedAppointmentID)
-        {
-            global $mysqli;
-            $report = array();
-
-            // Fetch patient name
-            // Fetch patient information, including the email address
-            $sql = "SELECT patient.PatientID, patient.Name, patient.Address, patient.Contact, patient.Gender, patient.DOB, patient.Email
-            FROM patient
-            JOIN appointment ON patient.PatientID = appointment.PatientID
-            WHERE appointment.AppointmentID = ?";
-            $stmt = $mysqli->prepare($sql);
-
-            if (!$stmt) {
-                echo "Error: " . $mysqli->error;
-            } else {
-                $stmt->bind_param("s", $selectedAppointmentID);
-                if ($stmt->execute()) {
-                    $result = $stmt->get_result();
-                    if ($result && $patientResult = $result->fetch_assoc()) {
-                        $report['PatientInfo'] = $patientResult;
-                    } else {
-                        echo "No data found for the selected appointment ID.";
-                    }
-                    $stmt->close();
-                } else {
-                    echo "Error executing the query: " . $stmt->error;
-                }
-            }
-
-            //$report['PatientInfo'] = $patientResult;
-
-            // Fetch blood test readings
-            $sql = "SELECT * FROM bloodtest WHERE AppointmentID = ?";
-            $stmt = $mysqli->prepare($sql);
-            $stmt->bind_param("s", $selectedAppointmentID);
-            $stmt->execute();
-            $bloodTestResult = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
-            $report['BloodTest'] = $bloodTestResult;
-
-            // Fetch urine test readings
-            $sql = "SELECT * FROM urinetest WHERE AppointmentID = ?";
-            $stmt = $mysqli->prepare($sql);
-            $stmt->bind_param("s", $selectedAppointmentID);
-            $stmt->execute();
-            $urineTestResult = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
-            $report['UrineTest'] = $urineTestResult;
-
-            // Fetch radiology test details
-            $sql = "SELECT * FROM radiologytest WHERE AppointmentID = ?";
-            $stmt = $mysqli->prepare($sql);
-            $stmt->bind_param("s", $selectedAppointmentID);
-            $stmt->execute();
-            $radiologyTestResult = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
-            $report['RadiologyTest'] = $radiologyTestResult;
-
-            return $report;
-        }
-
-        if ($_SERVER["REQUEST_METHOD"] == "POST") {
-            if (isset($_POST["generate_report_and_bill"])) {
-                $selectedAppointmentID = $_POST["selected_appointment_id"];
-                $report = generateReportAndBill($selectedAppointmentID);
-
-                // Define prices for the tests
-                $bloodTestPrice = 50;
-                $urineTestPrice = 40;
-                $radiologyTestPrice = 100;
-
-                // Calculate total bill
-                $totalBill = 0;
-                if (isset($report['BloodTest'])) {
-                    $totalBill += $bloodTestPrice;
-                }
-                if (isset($report['UrineTest'])) {
-                    $totalBill += $urineTestPrice;
-                }
-                if (isset($report['RadiologyTest'])) {
-                    $totalBill += $radiologyTestPrice;
-                }
-
-                // $email = $report['PatientInfo']['Email'];  // Get the patient's email from the report data
-                // $emailResult = sendEmailWithReport($email, $report, $totalBill);
-
-                // echo $emailResult;
-            }
-            if (isset($_POST["generate_report_and_bill_and_mail"])) {
-                $selectedAppointmentID = $_POST["selected_appointment_id"];
-                $report = generateReportAndBill($selectedAppointmentID);
-
-                // Define prices for the tests
-                $bloodTestPrice = 50;
-                $urineTestPrice = 40;
-                $radiologyTestPrice = 100;
-
-                // Calculate total bill
-                $totalBill = 0;
-                if (isset($report['BloodTest'])) {
-                    $totalBill += $bloodTestPrice;
-                }
-                if (isset($report['UrineTest'])) {
-                    $totalBill += $urineTestPrice;
-                }
-                if (isset($report['RadiologyTest'])) {
-                    $totalBill += $radiologyTestPrice;
-                }
-
-                $email = $report['PatientInfo']['Email'];  // Get the patient's email from the report data
-                $emailResult = sendEmailWithReport($email, $report, $totalBill);
-
-                echo $emailResult;
-            }
-        }
-        ?>
-        <!-- ... (Your existing HTML code) -->
 
         <h2 class="mt-4">Generate Report and Bill</h2>
 
@@ -578,17 +634,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input class="btn btn-primary" type="submit" name="generate_report_and_bill" value="Generate Report and Bill">
             <input class="btn btn-primary" type="submit" name="generate_report_and_bill_and_mail" value="Send mail">
         </form>
-        
+
 
         <?php
         if (isset($_POST["generate_report_and_bill"])) {
             $selectedAppointmentID = $_POST["selected_appointment_id"];
             $report = generateReportAndBill($selectedAppointmentID);
-
+            $patientAge = calculateAgeFromDOB($report['PatientInfo']['DOB']);
             if ($report) {
-                $bloodTestPrice = 250;
-                $urineTestPrice = 300;
-                $radiologyTestPrice = 500;
+                $patientAge = calculateAgeFromDOB($report['PatientInfo']['DOB']);
+
+            
+        
+                // Calculate Blood Test Price
+                $bloodTestPrice = calculateTestPrice($patientAge, 'bloodtest');
+                
+        
+                // Calculate Urine Test Price
+                $urineTestPrice = calculateTestPrice($patientAge, 'urinetest');
+                
+        
+                // Calculate Radiology Test Price
+                $radiologyTestPrice = calculateTestPrice($patientAge, 'radiologytest');
+                
+                
 
                 echo "<h2 class='mt-4'>Patient Information</h2>";
                 echo "<p><b>Name:</b> " . $report['PatientInfo']['Name'] . "</p>";
@@ -800,12 +869,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (isset($_POST["generate_report_and_bill_and_mail"])) {
             $selectedAppointmentID = $_POST["selected_appointment_id"];
             $report = generateReportAndBill($selectedAppointmentID);
-                
         }
         ?>
     </div> <!-- container -->
-
-
 
 
     <!-- Add Bootstrap JS (Popper.js and Bootstrap.js) -->
