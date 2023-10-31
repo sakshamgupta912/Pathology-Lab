@@ -15,8 +15,8 @@ $mail = new PHPMailer();
 $mail->isSMTP();
 $mail->Host = 'smtp.gmail.com';
 $mail->SMTPAuth = true;
-$mail->Username = 'sakshamdev3@gmail.com';
-$mail->Password = 'skhiiyshmgxeqyvy';
+$mail->Username = 'your-email-id@example.com';
+$mail->Password = 'smpt-password';
 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 $mail->Port = 587;
 
@@ -71,11 +71,11 @@ function sendEmailWithReport($email, $report, $totalBill)
     $mail->isSMTP();
     $mail->Host = 'smtp.gmail.com';
     $mail->SMTPAuth = true;
-    $mail->Username = 'sakshamdev3@gmail.com';
-    $mail->Password = 'skhiiyshmgxeqyvy';
+    $mail->Username = 'your-email@example.com';
+    $mail->Password = 'smtp-password';
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
     $mail->Port = 587;
-    $mail->setFrom('sakshamdev3@gmail.com', 'Your Name');
+    $mail->setFrom('your-email@example.com', 'Your Name');
     $mail->addAddress($email, $report['PatientInfo']['Name']); // Use the patient's email address
 
     $mail->isHTML(false);
@@ -454,7 +454,7 @@ function calculateTestPrice($age, $testType)
     $host = "localhost"; // Hostname
     $username = "root"; // MySQL username
     $password = ""; // MySQL password
-    $database = "pathologylab"; // Database name
+    $database = "pathologylab_final"; // Database name
 
     try {
         $dsn = "mysql:host=$host;dbname=$database";
